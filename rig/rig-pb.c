@@ -335,7 +335,7 @@ pb_property_value_new(rig_pb_serializer_t *serializer,
 }
 
 Rig__PropertyType
-rut_property_type_to_pb_type(rut_property_type_t type)
+rig_property_type_to_pb_type(rig_property_type_t type)
 {
     switch (type) {
     case RUT_PROPERTY_TYPE_FLOAT:
@@ -383,14 +383,14 @@ pb_boxed_new(rig_pb_serializer_t *serializer,
 
     pb_boxed->name = (char *)name;
     pb_boxed->has_type = true;
-    pb_boxed->type = rut_property_type_to_pb_type(boxed->type);
+    pb_boxed->type = rig_property_type_to_pb_type(boxed->type);
     pb_boxed->value = pb_property_value_new(serializer, boxed);
 
     return pb_boxed;
 }
 
 static void
-count_instrospectables_cb(rut_property_t *property, void *user_data)
+count_instrospectables_cb(rig_property_t *property, void *user_data)
 {
     if (!(property->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
         return;
@@ -401,7 +401,7 @@ count_instrospectables_cb(rut_property_t *property, void *user_data)
 }
 
 static void
-serialize_instrospectables_cb(rut_property_t *property,
+serialize_instrospectables_cb(rig_property_t *property,
                               void *user_data)
 {
     rig_pb_serializer_t *serializer = user_data;
@@ -411,7 +411,7 @@ serialize_instrospectables_cb(rut_property_t *property,
     if (!(property->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
         return;
 
-    rut_property_box(property, &boxed);
+    rig_property_box(property, &boxed);
 
     properties_out[serializer->n_properties++] =
         pb_boxed_new(serializer, property->spec->name, &boxed);
@@ -926,7 +926,7 @@ typedef struct _deps_state_t {
 
 static void
 serialize_binding_dep_cb(rig_binding_t *binding,
-                         rut_property_t *dependency,
+                         rig_property_t *dependency,
                          void *user_data)
 {
     deps_state_t *state = user_data;
@@ -1744,7 +1744,7 @@ unserializer_find_object(rig_pb_un_serializer_t *unserializer,
 bool
 rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
                         rut_boxed_t *boxed,
-                        rut_property_type_t type,
+                        rig_property_type_t type,
                         Rig__PropertyValue *pb_value)
 {
     boxed->type = type;
@@ -1923,10 +1923,10 @@ rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
 
 static bool
 set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
-                           rut_property_t *property,
+                           rig_property_t *property,
                            Rig__Boxed *pb_boxed)
 {
-    rut_property_type_t type = 0;
+    rig_property_type_t type = 0;
     rut_boxed_t boxed;
 
     if (!pb_boxed->value) {
@@ -1993,7 +1993,7 @@ set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
     }
 
     if (rig_pb_init_boxed_value(unserializer, &boxed, type, pb_boxed->value)) {
-        rut_property_set_boxed(
+        rig_property_set_boxed(
             &unserializer->engine->shell->property_ctx, property, &boxed);
         return true;
     } else
@@ -2010,7 +2010,7 @@ set_properties_from_pb_boxed_values(rig_pb_un_serializer_t *unserializer,
 
     for (i = 0; i < n_properties; i++) {
         Rig__Boxed *pb_boxed = properties[i];
-        rut_property_t *property =
+        rig_property_t *property =
             rut_introspectable_lookup_property(object, pb_boxed->name);
 
         if (!property) {
@@ -2572,7 +2572,7 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
         uint64_t object_id;
         rut_object_t *object;
         rig_controller_method_t method;
-        rut_property_t *property;
+        rig_property_t *property;
 
         if (!pb_property->has_object_id || pb_property->name == NULL)
             continue;
@@ -2666,7 +2666,7 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
             rig_binding_set_expression(binding, pb_property->c_expression);
 
             for (j = 0; j < pb_property->n_dependencies; j++) {
-                rut_property_t *dependency;
+                rig_property_t *dependency;
                 rut_object_t *dependency_object;
                 Rig__Controller__Property__Dependency *pb_dependency =
                     pb_property->dependencies[j];

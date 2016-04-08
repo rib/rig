@@ -62,7 +62,7 @@ double rig_controller_view_get_focus(rig_controller_view_t *view);
 
 void rig_controller_view_edit_property(rig_controller_view_t *view,
                                        bool mergable,
-                                       rut_property_t *property,
+                                       rig_property_t *property,
                                        rut_boxed_t *boxed_value);
 
 #endif /* _RIG_CONTROLLER_VIEW_H_ */

@@ -92,12 +92,12 @@ struct _rut_ui_viewport_t {
     float grab_doc_y;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_UI_VIEWPORT_N_PROPS];
+    rig_property_t properties[RUT_UI_VIEWPORT_N_PROPS];
 
     rut_input_region_t *input_region;
 };
 
-static rut_property_spec_t _rut_ui_viewport_prop_specs[] = {
+static rig_property_spec_t _rut_ui_viewport_prop_specs[] = {
     { .name = "width",
       .flags = RUT_PROPERTY_FLAG_READABLE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -622,7 +622,7 @@ queue_allocation(rut_ui_viewport_t *ui_viewport)
 }
 
 static void
-update_doc_xy_cb(rut_property_t *target_property, void *user_data)
+update_doc_xy_cb(rig_property_t *target_property, void *user_data)
 {
     rut_ui_viewport_t *ui_viewport = user_data;
 
@@ -672,14 +672,14 @@ rut_ui_viewport_new(rut_shell_t *shell, float width, float height)
     rut_graphable_add_child(ui_viewport->scroll_bar_y_transform,
                             ui_viewport->scroll_bar_y);
 
-    rut_property_set_binding(
+    rig_property_set_binding(
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_X],
         update_doc_xy_cb,
         ui_viewport,
         rut_introspectable_lookup_property(ui_viewport->scroll_bar_x,
                                            "virtual_offset"),
         NULL);
-    rut_property_set_binding(
+    rig_property_set_binding(
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_Y],
         update_doc_xy_cb,
         ui_viewport,
@@ -742,9 +742,9 @@ _rut_ui_viewport_set_size(rut_object_t *object, float width, float height)
 
     queue_allocation(ui_viewport);
 
-    rut_property_dirty(&ui_viewport->shell->property_ctx,
+    rig_property_dirty(&ui_viewport->shell->property_ctx,
                        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_WIDTH]);
-    rut_property_dirty(&ui_viewport->shell->property_ctx,
+    rig_property_dirty(&ui_viewport->shell->property_ctx,
                        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_HEIGHT]);
 }
 
@@ -783,7 +783,7 @@ rut_ui_viewport_set_doc_width(rut_object_t *obj, float doc_width)
     if (!ui_viewport->sync_widget)
         queue_allocation(ui_viewport);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &ui_viewport->shell->property_ctx,
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_WIDTH]);
 }
@@ -798,7 +798,7 @@ rut_ui_viewport_set_doc_height(rut_object_t *obj, float doc_height)
     if (!ui_viewport->sync_widget)
         queue_allocation(ui_viewport);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &ui_viewport->shell->property_ctx,
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_HEIGHT]);
 }
@@ -931,7 +931,7 @@ rut_ui_viewport_set_sync_widget(rut_object_t *obj, rut_object_t *widget)
 {
     rut_ui_viewport_t *ui_viewport = RUT_UI_VIEWPORT(obj);
     rut_closure_t *preferred_size_closure = NULL;
-    rut_property_t *property =
+    rig_property_t *property =
         &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_SYNC_WIDGET];
 
     if (widget) {
@@ -953,7 +953,7 @@ rut_ui_viewport_set_sync_widget(rut_object_t *obj, rut_object_t *widget)
     ui_viewport->sync_widget_preferred_size_closure = preferred_size_closure;
     ui_viewport->sync_widget = widget;
 
-    rut_property_dirty(&ui_viewport->shell->property_ctx, property);
+    rig_property_dirty(&ui_viewport->shell->property_ctx, property);
 }
 
 void

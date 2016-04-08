@@ -64,7 +64,7 @@ struct _rig_asset_t {
 
 #if 0
     rut_introspectable_props_t introspectable;
-    rut_property_t props[ASSET_N_PROPS];
+    rig_property_t props[ASSET_N_PROPS];
 #endif
 
     rig_asset_type_t type;
@@ -91,7 +91,7 @@ struct _rig_asset_t {
 };
 
 #if 0
-static rut_property_spec_t _asset_prop_specs[] = {
+static rig_property_spec_t _asset_prop_specs[] = {
     { 0 }
 };
 #endif

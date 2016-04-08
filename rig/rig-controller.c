@@ -32,7 +32,7 @@
 #include "rig-engine.h"
 #include "rig-timeline.h"
 
-static rut_property_spec_t _rig_controller_prop_specs[] = {
+static rig_property_spec_t _rig_controller_prop_specs[] = {
     { .name = "label",
       .nick = "label_t",
       .blurb = "A label for the entity",
@@ -203,12 +203,12 @@ rig_controller_new(rig_engine_t *engine, const char *label)
                                                    NULL, /* key_destroy */
                                                    free_prop_data_cb);
 
-    rut_property_set_copy_binding(
+    rig_property_set_copy_binding(
         &engine->shell->property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_PROGRESS],
         rut_introspectable_lookup_property(timeline, "progress"));
 
-    rut_property_set_copy_binding(
+    rig_property_set_copy_binding(
         &engine->shell->property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_ELAPSED],
         rut_introspectable_lookup_property(timeline, "elapsed"));
@@ -226,7 +226,7 @@ rig_controller_set_label(rut_object_t *object, const char *label)
 
     c_free(controller->label);
     controller->label = c_strdup(label);
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LABEL]);
 }
 
@@ -239,18 +239,18 @@ rig_controller_get_label(rut_object_t *object)
 }
 
 static void
-dummy_binding_cb(rut_property_t *property, void *user_data)
+dummy_binding_cb(rig_property_t *property, void *user_data)
 {
 }
 
 static void
-assert_path_value_cb(rut_property_t *property, void *user_data)
+assert_path_value_cb(rig_property_t *property, void *user_data)
 {
     rig_controller_prop_data_t *prop_data = user_data;
     rig_controller_t *controller = prop_data->controller;
-    rut_property_t *progress_prop =
+    rig_property_t *progress_prop =
         &controller->props[RIG_CONTROLLER_PROP_PROGRESS];
-    float progress = rut_property_get_double(progress_prop);
+    float progress = rig_property_get_double(progress_prop);
 
     c_return_if_fail(prop_data->method == RIG_CONTROLLER_METHOD_PATH);
     c_return_if_fail(prop_data->path);
@@ -263,7 +263,7 @@ activate_property_binding(rig_controller_prop_data_t *prop_data,
                           void *user_data)
 {
     rig_controller_t *controller = user_data;
-    rut_property_t *property = prop_data->property;
+    rig_property_t *property = prop_data->property;
 
     if (property->binding) {
         /* FIXME: we should find a way of reporting this to the
@@ -280,7 +280,7 @@ activate_property_binding(rig_controller_prop_data_t *prop_data,
 
     switch (prop_data->method) {
     case RIG_CONTROLLER_METHOD_CONSTANT: {
-        rut_property_t *active_prop;
+        rig_property_t *active_prop;
 
         /* Even though we are only asserting the property's constant
          * value once on activate, we add a binding for the property
@@ -293,22 +293,22 @@ activate_property_binding(rig_controller_prop_data_t *prop_data,
          * controllers.
          */
         active_prop = &controller->props[RIG_CONTROLLER_PROP_ACTIVE];
-        rut_property_set_binding(property,
+        rig_property_set_binding(property,
                                  dummy_binding_cb,
                                  prop_data,
                                  active_prop,
                                  NULL); /* sentinal */
 
-        rut_property_set_boxed(&controller->shell->property_ctx,
+        rig_property_set_boxed(&controller->shell->property_ctx,
                                property,
                                &prop_data->constant_value);
         break;
     }
     case RIG_CONTROLLER_METHOD_PATH: {
-        rut_property_t *progress_prop =
+        rig_property_t *progress_prop =
             &controller->props[RIG_CONTROLLER_PROP_PROGRESS];
 
-        rut_property_set_binding(property,
+        rig_property_set_binding(property,
                                  assert_path_value_cb,
                                  prop_data,
                                  progress_prop,
@@ -334,7 +334,7 @@ deactivate_property_binding(rig_controller_prop_data_t *prop_data,
     switch (prop_data->method) {
     case RIG_CONTROLLER_METHOD_CONSTANT:
     case RIG_CONTROLLER_METHOD_PATH:
-        rut_property_remove_binding(prop_data->property);
+        rig_property_remove_binding(prop_data->property);
         break;
     case RIG_CONTROLLER_METHOD_BINDING:
         if (prop_data->binding)
@@ -375,7 +375,7 @@ rig_controller_set_active(rut_object_t *object, bool active)
 
     update_effective_active_state(controller);
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_ACTIVE]);
 }
 
@@ -399,7 +399,7 @@ rig_controller_set_suspended(rut_object_t *object, bool suspended)
 
     update_effective_active_state(controller);
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_SUSPENDED]);
 }
 
@@ -422,7 +422,7 @@ rig_controller_set_auto_deactivate(rut_object_t *object,
 
     controller->auto_deactivate = auto_deactivate;
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_AUTO_DEACTIVATE]);
 }
 
@@ -444,7 +444,7 @@ rig_controller_set_loop(rut_object_t *object, bool loop)
 
     rig_timeline_set_loop_enabled(controller->timeline, loop);
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LOOP]);
 }
 
@@ -466,7 +466,7 @@ rig_controller_set_running(rut_object_t *object, bool running)
 
     rig_timeline_set_running(controller->timeline, running);
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_RUNNING]);
 }
 
@@ -488,7 +488,7 @@ rig_controller_set_length(rut_object_t *object, float length)
 
     rig_timeline_set_length(controller->timeline, length);
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_LENGTH]);
 }
 
@@ -521,9 +521,9 @@ rig_controller_set_elapsed(rut_object_t *object, double elapsed)
     if (controller->elapsed == prev_elapsed)
         return;
 
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_ELAPSED]);
-    rut_property_dirty(&controller->shell->property_ctx,
+    rig_property_dirty(&controller->shell->property_ctx,
                        &controller->props[RIG_CONTROLLER_PROP_PROGRESS]);
 }
 
@@ -554,14 +554,14 @@ rig_controller_get_progress(rut_object_t *object)
 
 rig_controller_prop_data_t *
 rig_controller_find_prop_data_for_property(rig_controller_t *controller,
-                                           rut_property_t *property)
+                                           rig_property_t *property)
 {
     return c_hash_table_lookup(controller->properties, property);
 }
 
 rig_path_t *
 rig_controller_find_path(rig_controller_t *controller,
-                         rut_property_t *property)
+                         rig_property_t *property)
 {
     rig_controller_prop_data_t *prop_data;
 
@@ -586,7 +586,7 @@ rig_controller_get_path_for_prop_data(rig_controller_t *controller,
 
 rig_path_t *
 rig_controller_get_path_for_property(rig_controller_t *controller,
-                                     rut_property_t *property)
+                                     rig_property_t *property)
 {
     rig_controller_prop_data_t *prop_data =
         rig_controller_find_prop_data_for_property(controller, property);
@@ -621,7 +621,7 @@ rig_controller_find_prop_data(rig_controller_t *controller,
                               rut_object_t *object,
                               const char *property_name)
 {
-    rut_property_t *property =
+    rig_property_t *property =
         rut_introspectable_lookup_property(object, property_name);
 
     if (!property)
@@ -685,7 +685,7 @@ rig_controller_add_operation_callback(
 
 void
 rig_controller_add_property(rig_controller_t *controller,
-                            rut_property_t *property)
+                            rig_property_t *property)
 {
     rig_controller_prop_data_t *prop_data =
         rig_controller_find_prop_data_for_property(controller, property);
@@ -698,7 +698,7 @@ rig_controller_add_property(rig_controller_t *controller,
     prop_data->method = RIG_CONTROLLER_METHOD_CONSTANT;
     prop_data->property = property;
 
-    rut_property_box(property, &prop_data->constant_value);
+    rig_property_box(property, &prop_data->constant_value);
 
     c_hash_table_insert(controller->properties, property, prop_data);
 
@@ -714,7 +714,7 @@ rig_controller_add_property(rig_controller_t *controller,
 
 void
 rig_controller_remove_property(rig_controller_t *controller,
-                               rut_property_t *property)
+                               rig_property_t *property)
 {
     rig_controller_prop_data_t *prop_data =
         rig_controller_find_prop_data_for_property(controller, property);
@@ -735,7 +735,7 @@ rig_controller_remove_property(rig_controller_t *controller,
 
 void
 rig_controller_set_property_method(rig_controller_t *controller,
-                                   rut_property_t *property,
+                                   rig_property_t *property,
                                    rig_controller_method_t method)
 {
     rig_controller_prop_data_t *prop_data =
@@ -765,7 +765,7 @@ rig_controller_set_property_method(rig_controller_t *controller,
 
 void
 rig_controller_set_property_constant(rig_controller_t *controller,
-                                     rut_property_t *property,
+                                     rig_property_t *property,
                                      rut_boxed_t *boxed_value)
 {
     rig_controller_prop_data_t *prop_data =
@@ -778,7 +778,7 @@ rig_controller_set_property_constant(rig_controller_t *controller,
 
     if (effective_active(controller) &&
         prop_data->method == RIG_CONTROLLER_METHOD_CONSTANT) {
-        rut_property_set_boxed(&controller->shell->property_ctx,
+        rig_property_set_boxed(&controller->shell->property_ctx,
                                prop_data->property,
                                boxed_value);
     }
@@ -786,7 +786,7 @@ rig_controller_set_property_constant(rig_controller_t *controller,
 
 void
 rig_controller_set_property_path(rig_controller_t *controller,
-                                 rut_property_t *property,
+                                 rig_property_t *property,
                                  rig_path_t *path)
 {
     rig_controller_prop_data_t *prop_data =
@@ -810,7 +810,7 @@ rig_controller_set_property_path(rig_controller_t *controller,
 
 void
 rig_controller_set_property_binding(rig_controller_t *controller,
-                                    rut_property_t *property,
+                                    rig_property_t *property,
                                     rig_binding_t *binding)
 {
     rig_controller_prop_data_t *prop_data =
@@ -912,7 +912,7 @@ update_length(rig_controller_t *controller, float new_length)
 
 void
 rig_controller_insert_path_value(rig_controller_t *controller,
-                                 rut_property_t *property,
+                                 rig_property_t *property,
                                  float t,
                                  const rut_boxed_t *value)
 {
@@ -948,7 +948,7 @@ rig_controller_insert_path_value(rig_controller_t *controller,
 
 void
 rig_controller_box_path_value(rig_controller_t *controller,
-                              rut_property_t *property,
+                              rig_property_t *property,
                               float t,
                               rut_boxed_t *out)
 {
@@ -975,7 +975,7 @@ rig_controller_box_path_value(rig_controller_t *controller,
 
 void
 rig_controller_remove_path_value(rig_controller_t *controller,
-                                 rut_property_t *property,
+                                 rig_property_t *property,
                                  float t)
 {
     rig_controller_prop_data_t *prop_data =

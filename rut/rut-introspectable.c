@@ -31,25 +31,25 @@
 #include "rut-introspectable.h"
 
 typedef struct _copy_properties_state_t {
-    rut_property_context_t *property_ctx;
+    rig_property_context_t *property_ctx;
     rut_object_t *dst;
 } copy_properties_state_t;
 
 static void
-copy_property_cb(rut_property_t *property, void *user_data)
+copy_property_cb(rig_property_t *property, void *user_data)
 {
     copy_properties_state_t *state = user_data;
     rut_object_t *dst = state->dst;
-    rut_property_t *dst_property =
+    rig_property_t *dst_property =
         rut_introspectable_lookup_property(dst, property->spec->name);
 
     c_return_if_fail(dst_property != NULL);
 
-    rut_property_copy_value(state->property_ctx, dst_property, property);
+    rig_property_copy_value(state->property_ctx, dst_property, property);
 }
 
 void
-rut_introspectable_copy_properties(rut_property_context_t *property_ctx,
+rut_introspectable_copy_properties(rig_property_context_t *property_ctx,
                                    rut_object_t *src,
                                    rut_object_t *dst)
 {
@@ -59,15 +59,15 @@ rut_introspectable_copy_properties(rut_property_context_t *property_ctx,
 
 void
 rut_introspectable_init(rut_object_t *object,
-                        rut_property_spec_t *specs,
-                        rut_property_t *properties)
+                        rig_property_spec_t *specs,
+                        rig_property_t *properties)
 {
     rut_introspectable_props_t *props =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
     int n;
 
     for (n = 0; specs[n].name; n++) {
-        rut_property_init(&properties[n], &specs[n], object, n);
+        rig_property_init(&properties[n], &specs[n], object, n);
     }
 
     props->first_property = properties;
@@ -79,14 +79,14 @@ rut_introspectable_destroy(rut_object_t *object)
 {
     rut_introspectable_props_t *props =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
-    rut_property_t *properties = props->first_property;
+    rig_property_t *properties = props->first_property;
     int i;
 
     for (i = 0; i < props->n_properties; i++)
-        rut_property_destroy(&properties[i]);
+        rig_property_destroy(&properties[i]);
 }
 
-rut_property_t *
+rig_property_t *
 rut_introspectable_lookup_property(rut_object_t *object,
                                    const char *name)
 {
@@ -95,7 +95,7 @@ rut_introspectable_lookup_property(rut_object_t *object,
     int i;
 
     for (i = 0; i < priv->n_properties; i++) {
-        rut_property_t *property = priv->first_property + i;
+        rig_property_t *property = priv->first_property + i;
         if (strcmp(property->spec->name, name) == 0)
             return property;
     }
@@ -114,7 +114,7 @@ rut_introspectable_foreach_property(
     int i;
 
     for (i = 0; i < priv->n_properties; i++) {
-        rut_property_t *property = priv->first_property + i;
+        rig_property_t *property = priv->first_property + i;
         callback(property, user_data);
     }
 }

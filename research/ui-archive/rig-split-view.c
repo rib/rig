@@ -68,10 +68,10 @@ struct _rig_split_view_t {
     rut_object_t *child1;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_SPLIT_VIEW_N_PROPS];
+    rig_property_t properties[RIG_SPLIT_VIEW_N_PROPS];
 };
 
-static rut_property_spec_t _rig_split_view_prop_specs[] = {
+static rig_property_spec_t _rig_split_view_prop_specs[] = {
     { .name = "width",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -302,9 +302,9 @@ rig_split_view_set_size(rut_object_t *object, float width, float height)
 
     queue_allocation(split_view);
 
-    rut_property_dirty(&split_view->shell->property_ctx,
+    rig_property_dirty(&split_view->shell->property_ctx,
                        &split_view->properties[RIG_SPLIT_VIEW_PROP_WIDTH]);
-    rut_property_dirty(&split_view->shell->property_ctx,
+    rig_property_dirty(&split_view->shell->property_ctx,
                        &split_view->properties[RIG_SPLIT_VIEW_PROP_HEIGHT]);
 }
 

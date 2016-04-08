@@ -63,7 +63,7 @@ struct _rut_image_t {
     c_list_t preferred_size_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_IMAGE_N_PROPS];
+    rig_property_t properties[RUT_IMAGE_N_PROPS];
 
     cg_pipeline_t *pipeline;
 
@@ -88,7 +88,7 @@ static rut_ui_enum_t _rut_image_draw_mode_ui_enum = {
                 { 0 } }
 };
 
-static rut_property_spec_t _rut_image_prop_specs[] = {
+static rig_property_spec_t _rut_image_prop_specs[] = {
     { .name = "draw_mode",
       .type = RUT_PROPERTY_TYPE_ENUM,
       .data_offset = offsetof(rut_image_t, draw_mode),
@@ -429,7 +429,7 @@ rut_image_set_draw_mode(rut_image_t *image,
                                       min_filter,
                                       mag_filter);
 
-        rut_property_dirty(&image->shell->property_ctx,
+        rig_property_dirty(&image->shell->property_ctx,
                            &image->properties[RUT_IMAGE_PROP_DRAW_MODE]);
     }
 }

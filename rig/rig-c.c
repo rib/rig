@@ -194,7 +194,7 @@ r_entity_new(RModule *module, RObject *parent)
     rig_code_module_props_t *code_module = (void *)module;
     rig_entity_t *entity;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
 
     prop_ctx->logging_disabled++;
     entity = rig_entity_new(engine);
@@ -221,7 +221,7 @@ entity_clone_under(RModule *module, rig_entity_t *entity, rig_entity_t *parent)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rig_entity_t *clone;
     c_ptr_array_t *entity_components = entity->components;
     rut_graphable_props_t *graph_props =
@@ -374,7 +374,7 @@ r_camera_new(RModule *module)
     rig_code_module_props_t *code_module = (void *)module;
     rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
 
     prop_ctx->logging_disabled++;
     component = rig_camera_new(engine,
@@ -402,7 +402,7 @@ r_view_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rig_view_t *view;
 
     prop_ctx->logging_disabled++;
@@ -437,7 +437,7 @@ r_controller_new(RModule *module, const char *name)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rig_controller_t *controller;
 
     prop_ctx->logging_disabled++;
@@ -474,8 +474,8 @@ r_controller_bind(RModule *module, RObject *controller,
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_t *dst_prop;
-    rut_property_t *src_prop;
+    rig_property_t *dst_prop;
+    rig_property_t *src_prop;
     rig_binding_t *binding;
 
     c_return_if_fail(rut_object_is(dst_obj, RUT_TRAIT_ID_INTROSPECTABLE));
@@ -502,7 +502,7 @@ r_light_new(RModule *module)
     rig_code_module_props_t *code_module = (void *)module;
     rut_object_t *component;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
 
     prop_ctx->logging_disabled++;
     component = rig_light_new(engine);
@@ -521,7 +521,7 @@ r_shape_new(RModule *module, float width, float height)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -543,7 +543,7 @@ r_nine_slice_new(RModule *module,
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -566,7 +566,7 @@ r_diamond_new(RModule *module, float size)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -586,7 +586,7 @@ r_pointalism_grid_new(RModule *module, float size)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -606,7 +606,7 @@ r_material_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -626,7 +626,7 @@ r_source_new(RModule *module, const char *url)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -652,7 +652,7 @@ r_button_input_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -672,7 +672,7 @@ r_text_new(RModule *module)
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rut_object_t *component;
 
     prop_ctx->logging_disabled++;
@@ -711,7 +711,7 @@ r_set_float_by_name(RModule *module, RObject *object, const char *name, float va
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_t *prop;
+    rig_property_t *prop;
 
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE));
 
@@ -725,7 +725,7 @@ r_set_float_by_name(RModule *module, RObject *object, const char *name, float va
     boxed.d.float_val = value;
     rig_engine_op_set_property(engine, prop, &boxed);
 #else
-    rut_property_set_float(&engine->shell->property_ctx, prop, value);
+    rig_property_set_float(&engine->shell->property_ctx, prop, value);
 #endif
 }
 #endif
@@ -739,11 +739,11 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, CTYPE value) \
     rig_engine_t *engine = code_module->engine; \
     rut_introspectable_props_t *priv = \
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
-    rut_property_t *prop = priv->first_property + id; \
+    rig_property_t *prop = priv->first_property + id; \
  \
     c_return_if_fail(id < priv->n_properties); \
  \
-    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+    rig_property_set_##SUFFIX(engine->property_ctx, prop, value); \
 } \
  \
 void \
@@ -751,13 +751,13 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, CTY
 { \
     rig_code_module_props_t *code_module = (void *)module; \
     rig_engine_t *engine = code_module->engine; \
-    rut_property_t *prop; \
+    rig_property_t *prop; \
  \
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
  \
     prop = rut_introspectable_lookup_property(object, name); \
  \
-    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+    rig_property_set_##SUFFIX(engine->property_ctx, prop, value); \
 }
 
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
@@ -771,11 +771,11 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE value[LEN])
     rig_engine_t *engine = code_module->engine; \
     rut_introspectable_props_t *priv = \
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
-    rut_property_t *prop = priv->first_property + id; \
+    rig_property_t *prop = priv->first_property + id; \
  \
     c_return_if_fail(id < priv->n_properties); \
  \
-    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+    rig_property_set_##SUFFIX(engine->property_ctx, prop, value); \
 } \
  \
 void \
@@ -783,13 +783,13 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
 { \
     rig_code_module_props_t *code_module = (void *)module; \
     rig_engine_t *engine = code_module->engine; \
-    rut_property_t *prop; \
+    rig_property_t *prop; \
  \
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
  \
     prop = rut_introspectable_lookup_property(object, name); \
  \
-    rut_property_set_##SUFFIX(engine->property_ctx, prop, value); \
+    rig_property_set_##SUFFIX(engine->property_ctx, prop, value); \
 }
 
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
@@ -801,11 +801,11 @@ r_set_##SUFFIX(RModule *module, RObject *object, int id, const CTYPE *value) \
     rig_engine_t *engine = code_module->engine; \
     rut_introspectable_props_t *priv = \
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE); \
-    rut_property_t *prop = priv->first_property + id; \
+    rig_property_t *prop = priv->first_property + id; \
  \
     c_return_if_fail(id < priv->n_properties); \
  \
-    rut_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
+    rig_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
 } \
  \
 void \
@@ -813,7 +813,7 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
 { \
     rig_code_module_props_t *code_module = (void *)module; \
     rig_engine_t *engine = code_module->engine; \
-    rut_property_t *prop; \
+    rig_property_t *prop; \
  \
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE)); \
  \
@@ -821,10 +821,10 @@ r_set_##SUFFIX##_by_name(RModule *module, RObject *object, const char *name, con
  \
     c_return_if_fail(prop); \
  \
-    rut_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
+    rig_property_set_##SUFFIX(&engine->shell->property_ctx, prop, (PRIV_CTYPE *)value); \
 }
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 _COMPOSITE_TYPE(color, RColor, cg_color_t, COLOR)
 _COMPOSITE_TYPE(quaternion, RQuaternion, c_quaternion_t, QUATERNION)
 
@@ -835,7 +835,7 @@ r_set_text_by_name(RModule *module, RObject *object, const char *name, const cha
 {
     rig_code_module_props_t *code_module = (void *)module;
     rig_engine_t *engine = code_module->engine;
-    rut_property_t *prop;
+    rig_property_t *prop;
 
     c_return_if_fail(rut_object_is(object, RUT_TRAIT_ID_INTROSPECTABLE));
 
@@ -849,7 +849,7 @@ r_set_text_by_name(RModule *module, RObject *object, const char *name, const cha
     boxed.d.text_val = (char *)value;
     rig_engine_op_set_property(engine, prop, &boxed);
 #else
-    rut_property_set_text(&engine->shell->property_ctx, prop, value);
+    rig_property_set_text(&engine->shell->property_ctx, prop, value);
 #endif
 }
 
@@ -860,7 +860,7 @@ r_set_text(RModule *module, RObject *object, int id, const char *value)
     rig_engine_t *engine = code_module->engine;
     rut_introspectable_props_t *priv =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
-    rut_property_t *prop = priv->first_property + id;
+    rig_property_t *prop = priv->first_property + id;
 
     c_return_if_fail(id < priv->n_properties);
 
@@ -870,7 +870,7 @@ r_set_text(RModule *module, RObject *object, int id, const char *value)
     boxed.d.text_val = (char *)value;
     rig_engine_op_set_property(engine, prop, &boxed);
 #else
-    rut_property_set_text(&engine->shell->property_ctx, prop, value);
+    rig_property_set_text(&engine->shell->property_ctx, prop, value);
 #endif
 }
 
@@ -1104,7 +1104,7 @@ resolve_cb(const char *symbol, void *user_data)
 static rig_native_module_t *
 native_module_new(rig_engine_t *engine)
 {
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rig_native_module_t *component;
 
     prop_ctx->logging_disabled++;
@@ -1121,7 +1121,7 @@ simulator_init_cb(r_sim_t *stub_sim)
 {
     rig_simulator_t *simulator = stub_sim->simulator;
     rig_engine_t *engine = simulator->engine;
-    rut_property_context_t *prop_ctx = engine->property_ctx;
+    rig_property_context_t *prop_ctx = engine->property_ctx;
     rig_ui_t *ui = rig_ui_new(engine);
     rig_entity_t *root;
 

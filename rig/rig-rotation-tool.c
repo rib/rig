@@ -232,7 +232,7 @@ tool_event_cb(rig_rotation_tool_t *tool,
         break;
 
     case RIG_ROTATION_TOOL_RELEASE: {
-        rut_property_t *rotation_prop =
+        rig_property_t *rotation_prop =
             rut_introspectable_lookup_property(entity, "rotation");
         rut_boxed_t value;
         rig_controller_view_t *controller_view =

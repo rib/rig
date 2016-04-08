@@ -37,28 +37,28 @@ extern rut_type_t rig_binding_type;
 typedef struct _rig_binding_t rig_binding_t;
 
 rig_binding_t *
-rig_binding_new(rig_engine_t *engine, rut_property_t *property, int binding_id);
+rig_binding_new(rig_engine_t *engine, rig_property_t *property, int binding_id);
 
 rig_binding_t *
 rig_binding_new_simple_copy(rig_engine_t *engine,
-                            rut_property_t *dst_prop,
-                            rut_property_t *src_prop);
+                            rig_property_t *dst_prop,
+                            rig_property_t *src_prop);
 
 int rig_binding_get_id(rig_binding_t *binding);
 
 void rig_binding_add_dependency(rig_binding_t *binding,
-                                rut_property_t *property,
+                                rig_property_t *property,
                                 const char *name);
 
 void rig_binding_remove_dependency(rig_binding_t *binding,
-                                   rut_property_t *property);
+                                   rig_property_t *property);
 
 char *rig_binding_get_expression(rig_binding_t *binding);
 
 void rig_binding_set_expression(rig_binding_t *binding, const char *expression);
 
 void rig_binding_set_dependency_name(rig_binding_t *binding,
-                                     rut_property_t *property,
+                                     rig_property_t *property,
                                      const char *name);
 
 void rig_binding_activate(rig_binding_t *binding);
@@ -69,7 +69,7 @@ int rig_binding_get_n_dependencies(rig_binding_t *binding);
 
 void rig_binding_foreach_dependency(rig_binding_t *binding,
                                     void (*callback)(rig_binding_t *binding,
-                                                     rut_property_t *dependency,
+                                                     rig_property_t *dependency,
                                                      void *user_data),
                                     void *user_data);
 

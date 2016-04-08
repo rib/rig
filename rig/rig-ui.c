@@ -783,10 +783,10 @@ pick_for_camera(rig_ui_t *ui,
 #if 0
     if (picked_entity)
     {
-        rut_property_t *label =
+        rig_property_t *label =
             rut_introspectable_lookup_property (picked_entity, "label");
 
-        c_debug ("Entity picked: %s\n", rut_property_get_text (label));
+        c_debug ("Entity picked: %s\n", rig_property_get_text (label));
     }
 #endif
 
@@ -955,7 +955,7 @@ on_onscreen_resize(cg_onscreen_t *onscreen,
     rut_shell_queue_redraw(view->engine->shell);
 }
 
-static rut_property_spec_t _rig_view_prop_specs[] = {
+static rig_property_spec_t _rig_view_prop_specs[] = {
     { .name = "width",
       .nick = "Width",
       .type = RUT_PROPERTY_TYPE_INTEGER,
@@ -1053,7 +1053,7 @@ void
 rig_view_set_width(rut_object_t *obj, int width)
 {
     rig_view_t *view = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (view->width == width)
         return;
@@ -1061,14 +1061,14 @@ rig_view_set_width(rut_object_t *obj, int width)
     view->width = width;
 
     prop_ctx = &view->engine->shell->property_ctx;
-    rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_WIDTH]);
+    rig_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_WIDTH]);
 }
 
 void
 rig_view_set_height(rut_object_t *obj, int height)
 {
     rig_view_t *view = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (view->height == height)
         return;
@@ -1076,7 +1076,7 @@ rig_view_set_height(rut_object_t *obj, int height)
     view->height = height;
 
     prop_ctx = &view->engine->shell->property_ctx;
-    rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_HEIGHT]);
+    rig_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_HEIGHT]);
 }
 
 rig_view_t *
@@ -1098,7 +1098,7 @@ void
 rig_view_set_camera(rut_object_t *obj, rut_object_t *camera_entity)
 {
     rig_view_t *view = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (view->camera_entity == camera_entity)
         return;
@@ -1117,7 +1117,7 @@ rig_view_set_camera(rut_object_t *obj, rut_object_t *camera_entity)
     }
 
     prop_ctx = &view->engine->shell->property_ctx;
-    rut_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_CAMERA_ENTITY]);
+    rig_property_dirty(prop_ctx, &view->properties[RIG_VIEW_PROP_CAMERA_ENTITY]);
 }
 
 void

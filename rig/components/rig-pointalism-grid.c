@@ -39,7 +39,7 @@
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
 
-static rut_property_spec_t _rig_pointalism_grid_prop_specs[] = {
+static rig_property_spec_t _rig_pointalism_grid_prop_specs[] = {
     { .name = "pointalism-scale",
       .nick = "Pointalism Scale Factor",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -379,7 +379,7 @@ _rig_pointalism_grid_copy(rut_object_t *object)
     rig_engine_t *engine = rig_component_props_get_engine(&grid->component);
     rig_pointalism_grid_t *copy =
         rig_pointalism_grid_new(engine, grid->cell_size);
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     rig_pointalism_grid_set_image_size(copy, grid->tex_width, grid->tex_height);
 
@@ -505,7 +505,7 @@ void
 rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
 {
     rig_pointalism_grid_t *grid = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (scale == grid->pointalism_scale)
         return;
@@ -513,7 +513,7 @@ rig_pointalism_grid_set_scale(rut_object_t *obj, float scale)
     grid->pointalism_scale = scale;
 
     prop_ctx = rig_component_props_get_property_context(&grid->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_SCALE]);
 }
 
@@ -529,7 +529,7 @@ void
 rig_pointalism_grid_set_z(rut_object_t *obj, float z)
 {
     rig_pointalism_grid_t *grid = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (z == grid->pointalism_z)
         return;
@@ -537,7 +537,7 @@ rig_pointalism_grid_set_z(rut_object_t *obj, float z)
     grid->pointalism_z = z;
 
     prop_ctx = rig_component_props_get_property_context(&grid->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_Z]);
 }
 
@@ -553,7 +553,7 @@ void
 rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
 {
     rig_pointalism_grid_t *grid = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (lighter == grid->pointalism_lighter)
         return;
@@ -561,7 +561,7 @@ rig_pointalism_grid_set_lighter(rut_object_t *obj, bool lighter)
     grid->pointalism_lighter = lighter;
 
     prop_ctx = rig_component_props_get_property_context(&grid->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_LIGHTER]);
 }
 
@@ -577,7 +577,7 @@ void
 rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
 {
     rig_pointalism_grid_t *grid = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (cell_size == grid->cell_size)
         return;
@@ -587,7 +587,7 @@ rig_pointalism_grid_set_cell_size(rut_object_t *obj, float cell_size)
     free_meshes(grid);
 
     prop_ctx = rig_component_props_get_property_context(&grid->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &grid->properties[RIG_POINTALISM_GRID_PROP_CELL_SIZE]);
 
     rut_closure_list_invoke(

@@ -38,7 +38,7 @@
 #include "rut-type.h"
 #include "rut-exception.h"
 #include "rut-object.h"
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-interfaces.h"
 #include "rut-introspectable.h"
 #include "rut-graphable.h"

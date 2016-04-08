@@ -32,7 +32,7 @@
 
 #include "rig-engine.h"
 
-static inline rut_property_context_t *
+static inline rig_property_context_t *
 rig_entity_get_property_context(rig_entity_t *entity)
 {
     return entity->engine->property_ctx;
@@ -50,7 +50,7 @@ rig_entity_get_shell(rig_entity_t *entity)
     return entity->engine->shell;
 }
 
-static inline rut_property_context_t *
+static inline rig_property_context_t *
 rig_component_props_get_property_context(rut_componentable_props_t *component)
 {
     if (component->parented)

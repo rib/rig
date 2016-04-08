@@ -135,7 +135,7 @@ struct _rut_text_t {
     c_list_t preferred_size_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_TEXT_N_PROPS];
+    rig_property_t properties[RUT_TEXT_N_PROPS];
 
     PangoFontDescription *font_desc;
 

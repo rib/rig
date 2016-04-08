@@ -223,7 +223,7 @@ rig_node_object_lerp(rig_node_t *a,
 }
 
 bool
-rig_node_box(rut_property_type_t type, rig_node_t *node, rut_boxed_t *value)
+rig_node_box(rig_property_type_t type, rig_node_t *node, rut_boxed_t *value)
 {
     switch (type) {
     case RUT_PROPERTY_TYPE_FLOAT:

@@ -221,7 +221,7 @@ apply_property_change(rig_frontend_t *frontend,
                       Rig__PropertyChange *pb_change)
 {
     void *object;
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t boxed;
 
     if (!pb_change->has_object_id || pb_change->object_id == 0 ||
@@ -251,7 +251,7 @@ apply_property_change(rig_frontend_t *frontend,
     rig_pb_init_boxed_value(
         unserializer, &boxed, property->spec->type, pb_change->value);
 
-    rut_property_set_boxed(
+    rig_property_set_boxed(
         &frontend->engine->shell->property_ctx, property, &boxed);
 }
 

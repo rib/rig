@@ -39,7 +39,7 @@
 #include "rut-input-region.h"
 #include "rut-texture-cache.h"
 
-static rut_property_spec_t _rut_fold_prop_specs[] = {
+static rig_property_spec_t _rut_fold_prop_specs[] = {
     { .name = "label",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_TEXT,
@@ -313,7 +313,7 @@ rut_fold_set_label(rut_object_t *object, const char *label)
 
     rut_text_set_text(fold->label, label);
 
-    rut_property_dirty(&fold->shell->property_ctx,
+    rig_property_dirty(&fold->shell->property_ctx,
                        &fold->properties[RUT_FOLD_PROP_LABEL]);
     rut_shell_queue_redraw(fold->shell);
 }

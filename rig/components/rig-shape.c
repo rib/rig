@@ -37,7 +37,7 @@
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
 
-static rut_property_spec_t _rig_shape_prop_specs[] = {
+static rig_property_spec_t _rig_shape_prop_specs[] = {
     { .name = "shaped",
       .nick = "Shaped",
       .type = RUT_PROPERTY_TYPE_BOOLEAN,
@@ -462,7 +462,7 @@ void
 rig_shape_set_shaped(rut_object_t *obj, bool shaped)
 {
     rig_shape_t *shape = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (shape->shaped == shaped)
         return;
@@ -475,7 +475,7 @@ rig_shape_set_shaped(rut_object_t *obj, bool shaped)
         &shape->reshaped_cb_list, rig_shape_re_shaped_callback_t, shape);
 
     prop_ctx = rig_component_props_get_property_context(&shape->component);
-    rut_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_SHAPED]);
+    rig_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_SHAPED]);
 }
 
 bool
@@ -499,7 +499,7 @@ void
 rig_shape_set_size(rut_object_t *self, float width, float height)
 {
     rig_shape_t *shape = self;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (shape->width == width && shape->height == height)
         return;
@@ -508,8 +508,8 @@ rig_shape_set_size(rut_object_t *self, float width, float height)
     shape->height = height;
 
     prop_ctx = rig_component_props_get_property_context(&shape->component);
-    rut_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_WIDTH]);
-    rut_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_HEIGHT]);
+    rig_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_WIDTH]);
+    rig_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_HEIGHT]);
 
     free_model(shape);
 
@@ -529,7 +529,7 @@ void
 rig_shape_set_width(rut_object_t *obj, float width)
 {
     rig_shape_t *shape = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (shape->width == width)
         return;
@@ -538,7 +538,7 @@ rig_shape_set_width(rut_object_t *obj, float width)
     free_model(shape);
 
     prop_ctx = rig_component_props_get_property_context(&shape->component);
-    rut_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_WIDTH]);
+    rig_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_WIDTH]);
 
     rut_closure_list_invoke(
         &shape->reshaped_cb_list, rig_shape_re_shaped_callback_t, shape);
@@ -548,7 +548,7 @@ void
 rig_shape_set_height(rut_object_t *obj, float height)
 {
     rig_shape_t *shape = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (shape->height == height)
         return;
@@ -557,7 +557,7 @@ rig_shape_set_height(rut_object_t *obj, float height)
     free_model(shape);
 
     prop_ctx = rig_component_props_get_property_context(&shape->component);
-    rut_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_HEIGHT]);
+    rig_property_dirty(prop_ctx, &shape->properties[RIG_SHAPE_PROP_HEIGHT]);
 
     rut_closure_list_invoke(
         &shape->reshaped_cb_list, rig_shape_re_shaped_callback_t, shape);

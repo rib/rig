@@ -111,7 +111,7 @@ struct _rig_entity_t {
     void *renderer_priv;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_ENTITY_N_PROPS];
+    rig_property_t properties[RUT_ENTITY_N_PROPS];
 
     unsigned int dirty : 1;
 };

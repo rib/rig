@@ -82,10 +82,10 @@ struct _rut_scroll_bar_t {
     float grab_offset;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_SCROLL_BAR_N_PROPS];
+    rig_property_t properties[RUT_SCROLL_BAR_N_PROPS];
 };
 
-static rut_property_spec_t _rut_scroll_bar_prop_specs[] = {
+static rig_property_spec_t _rut_scroll_bar_prop_specs[] = {
     { .name = "length",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -407,12 +407,12 @@ reclamp_offset(rut_scroll_bar_t *scroll_bar)
     float offset = clamp_offset(scroll_bar, scroll_bar->offset);
 
     if (offset != scroll_bar->offset) {
-        rut_property_t *property =
+        rig_property_t *property =
             &scroll_bar->properties[RUT_SCROLL_BAR_PROP_VIRTUAL_OFFSET];
 
         scroll_bar->offset = offset;
 
-        rut_property_dirty(&scroll_bar->shell->property_ctx, property);
+        rig_property_dirty(&scroll_bar->shell->property_ctx, property);
     }
 }
 
@@ -461,7 +461,7 @@ rut_scroll_bar_set_virtual_offset(rut_object_t *obj, float viewport_offset)
 
     update_handle_position(scroll_bar);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &scroll_bar->shell->property_ctx,
         &scroll_bar->properties[RUT_SCROLL_BAR_PROP_VIRTUAL_OFFSET]);
 }

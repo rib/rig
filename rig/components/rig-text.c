@@ -39,7 +39,7 @@
 
 static const uint32_t default_text_color = 0x000000ff;
 
-static rut_property_spec_t _rig_text_prop_specs[] = {
+static rig_property_spec_t _rig_text_prop_specs[] = {
     { .name = "text",
       .type = RUT_PROPERTY_TYPE_TEXT,
       .getter.text_type = rig_text_get_text,
@@ -119,7 +119,7 @@ _rig_text_copy(rut_object_t *object)
     rig_text_t *text = object;
     rig_engine_t *engine = rig_component_props_get_engine(&text->component);
     rig_text_t *copy = rig_text_new(engine);
-    rut_property_context_t *prop_ctx =
+    rig_property_context_t *prop_ctx =
         rig_component_props_get_property_context(&text->component);
 
     rut_introspectable_copy_properties(prop_ctx, text, copy);
@@ -184,7 +184,7 @@ static void
 _rig_text_set_size(rut_object_t *object, float width, float height)
 {
     rig_text_t *text = object;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (text->width == width && text->height == height)
         return;
@@ -198,8 +198,8 @@ _rig_text_set_size(rut_object_t *object, float width, float height)
     rig_text_notify_preferred_size_changed(text);
 
     prop_ctx = rig_component_props_get_property_context(&text->component);
-    rut_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_WIDTH]);
-    rut_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_HEIGHT]);
+    rig_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_WIDTH]);
+    rig_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_HEIGHT]);
 }
 
 void
@@ -357,7 +357,7 @@ void
 rig_text_set_text(rut_object_t *obj, const char *text_str)
 {
     rig_text_t *text = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (text->text) {
         c_free(text->text);
@@ -373,7 +373,7 @@ rig_text_set_text(rut_object_t *obj, const char *text_str)
                                      -1);
 
     prop_ctx = rig_component_props_get_property_context(&text->component);
-    rut_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_TEXT]);
+    rig_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_TEXT]);
 }
 
 const char *
@@ -396,7 +396,7 @@ void
 rig_text_set_font_family(rut_object_t *obj, const char *font_family)
 {
     rig_text_t *text = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (font_family == NULL || font_family[0] == '\0')
         font_family = "Sans 12";
@@ -407,7 +407,7 @@ rig_text_set_font_family(rut_object_t *obj, const char *font_family)
     text->font_family = c_strdup(font_family);
 
     prop_ctx = rig_component_props_get_property_context(&text->component);
-    rut_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_FONT_FAMILY]);
+    rig_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_FONT_FAMILY]);
 }
 
 float
@@ -422,7 +422,7 @@ void
 rig_text_set_font_size(rut_object_t *obj, float font_size)
 {
     rig_text_t *text = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (text->font_size == font_size)
         return;
@@ -430,19 +430,19 @@ rig_text_set_font_size(rut_object_t *obj, float font_size)
     text->font_size = font_size;
 
     prop_ctx = rig_component_props_get_property_context(&text->component);
-    rut_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_FONT_SIZE]);
+    rig_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_FONT_SIZE]);
 }
 
 void
 rig_text_set_color(rut_object_t *obj, const cg_color_t *color)
 {
     rig_text_t *text = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     text->color = *color;
 
     prop_ctx = rig_component_props_get_property_context(&text->component);
-    rut_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_COLOR]);
+    rig_property_dirty(prop_ctx, &text->properties[RIG_TEXT_PROP_COLOR]);
 }
 
 const cg_color_t *

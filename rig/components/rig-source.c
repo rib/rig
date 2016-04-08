@@ -161,7 +161,7 @@ struct _rig_source_t {
     c_list_t error_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_SOURCE_N_PROPS];
+    rig_property_t properties[RIG_SOURCE_N_PROPS];
 };
 
 typedef struct _source_wrappers_t {
@@ -176,7 +176,7 @@ static void
 _source_load_progress(rig_source_t *source);
 
 
-static rut_property_spec_t _rig_source_prop_specs[] = {
+static rig_property_spec_t _rig_source_prop_specs[] = {
     { .name = "url",
       .type = RUT_PROPERTY_TYPE_TEXT,
       .getter.text_type = rig_source_get_url,
@@ -1569,7 +1569,7 @@ void
 rig_source_set_url(rut_object_t *obj, const char *url)
 {
     rig_source_t *source = obj;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (source->url) {
         c_free(source->url);
@@ -1591,7 +1591,7 @@ rig_source_set_url(rut_object_t *obj, const char *url)
     }
 
     prop_ctx = rig_component_props_get_property_context(&source->component);
-    rut_property_dirty(prop_ctx, &source->properties[RIG_SOURCE_PROP_URL]);
+    rig_property_dirty(prop_ctx, &source->properties[RIG_SOURCE_PROP_URL]);
 }
 
 const char *
@@ -1622,7 +1622,7 @@ rig_source_set_running(rut_object_t *object, bool running)
         rig_timeline_set_running(source->timeline, running);
 
     engine = rig_component_props_get_engine(&source->component);
-    rut_property_dirty(engine->property_ctx,
+    rig_property_dirty(engine->property_ctx,
                        &source->properties[RIG_SOURCE_PROP_RUNNING]);
 }
 

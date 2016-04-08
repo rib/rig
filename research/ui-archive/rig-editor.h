@@ -69,7 +69,7 @@ void rig_editor_clear_search_results(rig_editor_t *editor);
 void rig_editor_free_result_input_closures(rig_editor_t *editor);
 
 void rig_reload_inspector_property(rig_editor_t *editor,
-                                   rut_property_t *property);
+                                   rig_property_t *property);
 
 void rig_reload_position_inspector(rig_editor_t *editor, rig_entity_t *entity);
 

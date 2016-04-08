@@ -70,10 +70,10 @@ struct _rut_stack_t {
     c_list_t preferred_size_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_STACK_N_PROPS];
+    rig_property_t properties[RUT_STACK_N_PROPS];
 };
 
-static rut_property_spec_t _rut_stack_prop_specs[] = {
+static rig_property_spec_t _rut_stack_prop_specs[] = {
     { .name = "width",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -320,9 +320,9 @@ rut_stack_set_size(rut_object_t *self, float width, float height)
     stack->width = width;
     stack->height = height;
 
-    rut_property_dirty(&stack->shell->property_ctx,
+    rig_property_dirty(&stack->shell->property_ctx,
                        &stack->properties[RUT_STACK_PROP_WIDTH]);
-    rut_property_dirty(&stack->shell->property_ctx,
+    rig_property_dirty(&stack->shell->property_ctx,
                        &stack->properties[RUT_STACK_PROP_HEIGHT]);
 
     queue_allocation(stack);

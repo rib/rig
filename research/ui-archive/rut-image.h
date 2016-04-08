@@ -29,7 +29,7 @@
 #ifndef _RUT_IMAGE_H_
 #define _RUT_IMAGE_H_
 
-#include "rut-property.h"
+#include "rig-property.h"
 
 extern rut_type_t rut_image_type;
 

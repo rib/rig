@@ -82,10 +82,10 @@ struct _rig_nine_slice_t {
     c_list_t updated_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RIG_NINE_SLICE_N_PROPS];
+    rig_property_t properties[RIG_NINE_SLICE_N_PROPS];
 };
 
-static rut_property_spec_t _rig_nine_slice_prop_specs[] = {
+static rig_property_spec_t _rig_nine_slice_prop_specs[] = {
     { .name = "width",
       .nick = "Width",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -627,7 +627,7 @@ void
 rig_nine_slice_set_size(rut_object_t *self, float width, float height)
 {
     rig_nine_slice_t *nine_slice = self;
-    rut_property_context_t *prop_ctx;
+    rig_property_context_t *prop_ctx;
 
     if (nine_slice->width == width && nine_slice->height == height)
         return;
@@ -638,9 +638,9 @@ rig_nine_slice_set_size(rut_object_t *self, float width, float height)
     nine_slice->height = height;
 
     prop_ctx = rig_component_props_get_property_context(&nine_slice->component);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &nine_slice->properties[RIG_NINE_SLICE_PROP_WIDTH]);
-    rut_property_dirty(prop_ctx,
+    rig_property_dirty(prop_ctx,
                        &nine_slice->properties[RIG_NINE_SLICE_PROP_HEIGHT]);
 
     rut_closure_list_invoke(&nine_slice->updated_cb_list,
@@ -699,13 +699,13 @@ rig_nine_slice_add_update_callback(rig_nine_slice_t *nine_slice,
     void rig_nine_slice_set_##PROP_LC(rut_object_t *obj, float PROP_LC)        \
     {                                                                          \
         rig_nine_slice_t *nine_slice = obj;                                    \
-        rut_property_context_t *prop_ctx;                                      \
+        rig_property_context_t *prop_ctx;                                      \
         if (nine_slice->PROP_LC == PROP_LC)                                    \
             return;                                                            \
         nine_slice->PROP_LC = PROP_LC;                                         \
         free_mesh(nine_slice);                                                 \
         prop_ctx = rig_component_props_get_property_context(&nine_slice->component); \
-        rut_property_dirty(prop_ctx,                                           \
+        rig_property_dirty(prop_ctx,                                           \
             &nine_slice->properties[RIG_NINE_SLICE_PROP_##PROP_UC]);           \
         rut_closure_list_invoke(&nine_slice->updated_cb_list,                  \
                                 rig_nine_slice_update_callback_t,              \

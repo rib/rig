@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-introspectable.h"
 #include "rut-color.h"
 #include "rut-util.h"
@@ -41,7 +41,7 @@
 static int dummy_object;
 
 void
-rut_property_context_init(rut_property_context_t *context)
+rig_property_context_init(rig_property_context_t *context)
 {
     context->logging_disabled = 1;
     context->magic_marker = 0;
@@ -49,21 +49,21 @@ rut_property_context_init(rut_property_context_t *context)
 }
 
 void
-rut_property_context_clear_log(rut_property_context_t *context)
+rig_property_context_clear_log(rig_property_context_t *context)
 {
     rut_memory_stack_rewind(context->change_log_stack);
     context->log_len = 0;
 }
 
 void
-rut_property_context_destroy(rut_property_context_t *context)
+rig_property_context_destroy(rig_property_context_t *context)
 {
     rut_memory_stack_free(context->change_log_stack);
 }
 
 void
-rut_property_init(rut_property_t *property,
-                  const rut_property_spec_t *spec,
+rig_property_init(rig_property_t *property,
+                  const rig_property_spec_t *spec,
                   void *object,
                   uint8_t id)
 {
@@ -84,9 +84,9 @@ rut_property_init(rut_property_t *property,
 }
 
 static void
-_rut_property_destroy_binding(rut_property_t *property)
+_rig_property_destroy_binding(rig_property_t *property)
 {
-    rut_property_binding_t *binding = property->binding;
+    rig_property_binding_t *binding = property->binding;
 
     if (binding) {
         int i;
@@ -95,12 +95,12 @@ _rut_property_destroy_binding(rut_property_t *property)
             binding->destroy_notify(property, binding->user_data);
 
         for (i = 0; binding->dependencies[i]; i++) {
-            rut_property_t *dependency = binding->dependencies[i];
+            rig_property_t *dependency = binding->dependencies[i];
             dependency->dependants =
                 c_sllist_remove(dependency->dependants, property);
         }
 
-        c_slice_free1(sizeof(rut_property_binding_t) + sizeof(void *) * (i + 1),
+        c_slice_free1(sizeof(rig_property_binding_t) + sizeof(void *) * (i + 1),
                       binding);
 
         property->binding = NULL;
@@ -108,33 +108,33 @@ _rut_property_destroy_binding(rut_property_t *property)
 }
 
 void
-rut_property_destroy(rut_property_t *property)
+rig_property_destroy(rig_property_t *property)
 {
     c_sllist_t *l;
 
-    _rut_property_destroy_binding(property);
+    _rig_property_destroy_binding(property);
 
     /* XXX: we don't really know if this property was a hard requirement
      * for the bindings associated with dependants so for now we assume
      * it was and we free all bindings associated with them...
      */
     for (l = property->dependants; l; l = l->next) {
-        rut_property_t *dependant = l->data;
-        _rut_property_destroy_binding(dependant);
+        rig_property_t *dependant = l->data;
+        _rig_property_destroy_binding(dependant);
     }
 }
 
 void
-rut_property_copy_value(rut_property_context_t *ctx,
-                        rut_property_t *dest,
-                        rut_property_t *src)
+rig_property_copy_value(rig_property_context_t *ctx,
+                        rig_property_t *dest,
+                        rig_property_t *src)
 {
     c_return_if_fail(src->spec->type == dest->spec->type);
 
-    switch ((rut_property_type_t)dest->spec->type) {
+    switch ((rig_property_type_t)dest->spec->type) {
 #define COPIER(SUFFIX, CTYPE, TYPE)                                            \
 case RUT_PROPERTY_TYPE_##TYPE:                                             \
-    rut_property_set_##SUFFIX(ctx, dest, rut_property_get_##SUFFIX(src));  \
+    rig_property_set_##SUFFIX(ctx, dest, rig_property_get_##SUFFIX(src));  \
     return
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) COPIER(SUFFIX, CTYPE, TYPE);
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE) COPIER(SUFFIX, CTYPE, TYPE);
@@ -143,7 +143,7 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
 
         COPIER(text, char *, TEXT);
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef ARRAY_TYPE
 #undef COMPOSITE_TYPE
@@ -156,22 +156,22 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
 }
 
 void
-rut_property_cast_scalar_value(rut_property_context_t *ctx,
-                               rut_property_t *dest,
-                               rut_property_t *src)
+rig_property_cast_scalar_value(rig_property_context_t *ctx,
+                               rig_property_t *dest,
+                               rig_property_t *src)
 {
     double val;
 
-    switch ((rut_property_type_t)src->spec->type) {
+    switch ((rig_property_type_t)src->spec->type) {
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                       \
 case RUT_PROPERTY_TYPE_##TYPE:                                             \
-    val = rut_property_get_##SUFFIX(src);                                  \
+    val = rig_property_get_##SUFFIX(src);                                  \
     break;
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef ARRAY_TYPE
 #undef COMPOSITE_TYPE
@@ -181,16 +181,16 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
         c_warn_if_reached();
     }
 
-    switch ((rut_property_type_t)dest->spec->type) {
+    switch ((rig_property_type_t)dest->spec->type) {
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                       \
 case RUT_PROPERTY_TYPE_##TYPE:                                             \
-    rut_property_set_##SUFFIX(ctx, dest, val);                             \
+    rig_property_set_##SUFFIX(ctx, dest, val);                             \
     return;
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef ARRAY_TYPE
 #undef COMPOSITE_TYPE
@@ -204,15 +204,15 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
 }
 
 void
-_rut_property_set_binding_full_array(
-    rut_property_t *property,
+_rig_property_set_binding_full_array(
+    rig_property_t *property,
     rut_binding_callback_t callback,
     void *user_data,
     rut_binding_destroy_notify_t destroy_notify,
-    rut_property_t **dependencies,
+    rig_property_t **dependencies,
     int n_dependencies)
 {
-    rut_property_binding_t *binding;
+    rig_property_binding_t *binding;
     int i;
 
     /* XXX: Note: for now we don't allow multiple bindings for the same
@@ -223,12 +223,12 @@ _rut_property_set_binding_full_array(
     if (property->binding) {
         c_return_if_fail(callback == NULL);
 
-        _rut_property_destroy_binding(property);
+        _rig_property_destroy_binding(property);
         return;
     } else if (callback == NULL)
         return;
 
-    binding = c_slice_alloc(sizeof(rut_property_binding_t) +
+    binding = c_slice_alloc(sizeof(rig_property_binding_t) +
                             sizeof(void *) * (n_dependencies + 1));
     binding->callback = callback;
     binding->user_data = user_data;
@@ -239,7 +239,7 @@ _rut_property_set_binding_full_array(
     binding->dependencies[n_dependencies] = NULL;
 
     for (i = 0; i < n_dependencies; i++) {
-        rut_property_t *dependency = dependencies[i];
+        rig_property_t *dependency = dependencies[i];
         dependency->dependants =
             c_sllist_prepend(dependency->dependants, property);
     }
@@ -253,41 +253,41 @@ _rut_property_set_binding_full_array(
 }
 
 static void
-_rut_property_set_binding_full_valist(
-    rut_property_t *property,
+_rig_property_set_binding_full_valist(
+    rig_property_t *property,
     rut_binding_callback_t callback,
     void *user_data,
     rut_binding_destroy_notify_t destroy_notify,
     va_list ap)
 {
-    rut_property_t *dependency;
+    rig_property_t *dependency;
     va_list aq;
     int i;
 
     va_copy(aq, ap);
-    for (i = 0; (dependency = va_arg(aq, rut_property_t *)); i++)
+    for (i = 0; (dependency = va_arg(aq, rig_property_t *)); i++)
         ;
     va_end(aq);
 
     if (i) {
-        rut_property_t **dependencies;
-        rut_property_t *dependency;
+        rig_property_t **dependencies;
+        rig_property_t *dependency;
         int j = 0;
 
         dependencies = alloca(sizeof(void *) * i);
 
-        for (j = 0; (dependency = va_arg(ap, rut_property_t *)); j++)
+        for (j = 0; (dependency = va_arg(ap, rig_property_t *)); j++)
             dependencies[j] = dependency;
 
-        _rut_property_set_binding_full_array(
+        _rig_property_set_binding_full_array(
             property, callback, user_data, destroy_notify, dependencies, i);
     } else
-        _rut_property_set_binding_full_array(
+        _rig_property_set_binding_full_array(
             property, callback, user_data, destroy_notify, NULL, 0);
 }
 
 void
-rut_property_set_binding(rut_property_t *property,
+rig_property_set_binding(rig_property_t *property,
                          rut_binding_callback_t callback,
                          void *user_data,
                          ...)
@@ -295,7 +295,7 @@ rut_property_set_binding(rut_property_t *property,
     va_list ap;
 
     va_start(ap, user_data);
-    _rut_property_set_binding_full_valist(property,
+    _rig_property_set_binding_full_valist(property,
                                           callback,
                                           user_data,
                                           NULL, /* destroy_notify */
@@ -304,7 +304,7 @@ rut_property_set_binding(rut_property_t *property,
 }
 
 void
-rut_property_set_binding_full(rut_property_t *property,
+rig_property_set_binding_full(rig_property_t *property,
                               rut_binding_callback_t callback,
                               void *user_data,
                               rut_binding_destroy_notify_t destroy_notify,
@@ -313,31 +313,31 @@ rut_property_set_binding_full(rut_property_t *property,
     va_list ap;
 
     va_start(ap, destroy_notify);
-    _rut_property_set_binding_full_valist(
+    _rig_property_set_binding_full_valist(
         property, callback, user_data, destroy_notify, ap);
     va_end(ap);
 }
 
 void
-rut_property_set_binding_by_name(rut_object_t *object,
+rig_property_set_binding_by_name(rut_object_t *object,
                                  const char *name,
                                  rut_binding_callback_t callback,
                                  void *user_data,
                                  ...)
 {
-    rut_property_t *property = rut_introspectable_lookup_property(object, name);
+    rig_property_t *property = rut_introspectable_lookup_property(object, name);
     va_list ap;
 
     c_return_if_fail(property);
 
     va_start(ap, user_data);
-    _rut_property_set_binding_full_valist(
+    _rig_property_set_binding_full_valist(
         property, callback, user_data, NULL, ap);
     va_end(ap);
 }
 
 void
-rut_property_set_binding_full_by_name(
+rig_property_set_binding_full_by_name(
     rut_object_t *object,
     const char *name,
     rut_binding_callback_t callback,
@@ -345,87 +345,87 @@ rut_property_set_binding_full_by_name(
     rut_binding_destroy_notify_t destroy_notify,
     ...)
 {
-    rut_property_t *property = rut_introspectable_lookup_property(object, name);
+    rig_property_t *property = rut_introspectable_lookup_property(object, name);
     va_list ap;
 
     c_return_if_fail(property);
 
     va_start(ap, destroy_notify);
-    _rut_property_set_binding_full_valist(
+    _rig_property_set_binding_full_valist(
         property, callback, user_data, destroy_notify, ap);
     va_end(ap);
 }
 
 static void
-_rut_property_copy_binding_cb(rut_property_t *target_property,
+_rig_property_copy_binding_cb(rig_property_t *target_property,
                               void *user_data)
 {
-    rut_property_context_t *context = user_data;
-    rut_property_t *source_property =
-        rut_property_get_first_source(target_property);
+    rig_property_context_t *context = user_data;
+    rig_property_t *source_property =
+        rig_property_get_first_source(target_property);
 
-    rut_property_copy_value(context, target_property, source_property);
+    rig_property_copy_value(context, target_property, source_property);
 }
 
 void
-rut_property_set_copy_binding(rut_property_context_t *context,
-                              rut_property_t *target_property,
-                              rut_property_t *source_property)
+rig_property_set_copy_binding(rig_property_context_t *context,
+                              rig_property_t *target_property,
+                              rig_property_t *source_property)
 {
-    rut_property_set_binding(target_property,
-                             _rut_property_copy_binding_cb,
+    rig_property_set_binding(target_property,
+                             _rig_property_copy_binding_cb,
                              context,
                              source_property,
                              NULL /* terminator */);
-    _rut_property_copy_binding_cb(target_property, context);
+    _rig_property_copy_binding_cb(target_property, context);
 }
 
 void
-rut_property_set_mirror_bindings(rut_property_context_t *context,
-                                 rut_property_t *prop0,
-                                 rut_property_t *prop1)
+rig_property_set_mirror_bindings(rig_property_context_t *context,
+                                 rig_property_t *prop0,
+                                 rig_property_t *prop1)
 {
-    rut_property_set_copy_binding(context, prop0, prop1);
-    rut_property_set_copy_binding(context, prop1, prop0);
+    rig_property_set_copy_binding(context, prop0, prop1);
+    rig_property_set_copy_binding(context, prop1, prop0);
 }
 
 static void
-_rut_property_cast_binding_cb(rut_property_t *target_property,
+_rig_property_cast_binding_cb(rig_property_t *target_property,
                               void *user_data)
 {
-    rut_property_context_t *context = user_data;
-    rut_property_t *source_property =
-        rut_property_get_first_source(target_property);
+    rig_property_context_t *context = user_data;
+    rig_property_t *source_property =
+        rig_property_get_first_source(target_property);
 
-    rut_property_cast_scalar_value(context, target_property, source_property);
+    rig_property_cast_scalar_value(context, target_property, source_property);
 }
 
 void
-rut_property_set_cast_scalar_binding(rut_property_context_t *context,
-                                     rut_property_t *target_property,
-                                     rut_property_t *source_property)
+rig_property_set_cast_scalar_binding(rig_property_context_t *context,
+                                     rig_property_t *target_property,
+                                     rig_property_t *source_property)
 {
-    rut_property_set_binding(target_property,
-                             _rut_property_cast_binding_cb,
+    rig_property_set_binding(target_property,
+                             _rig_property_cast_binding_cb,
                              context,
                              source_property,
                              NULL /* terminator */);
-    _rut_property_cast_binding_cb(target_property, context);
+    _rig_property_cast_binding_cb(target_property, context);
 }
 
 void
-rut_property_remove_binding(rut_property_t *property)
+rig_property_remove_binding(rig_property_t *property)
 {
     if (!property->binding)
         return;
 
-    rut_property_set_binding(property,
+    rig_property_set_binding(property,
                              NULL, /* no callback */
                              NULL, /* no user data */
                              NULL); /* null vararg terminator */
 }
 
-static rut_property_spec_t dummy_property_spec = {
+static rig_property_spec_t dummy_property_spec = {
     .name = "dummy",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -434,52 +434,52 @@ static rut_property_spec_t dummy_property_spec = {
     .getter.any_type = abort
 };
 
-struct _rut_property_closure_t {
-    rut_property_t dummy_prop;
+struct _rig_property_closure_t {
+    rig_property_t dummy_prop;
     rut_binding_callback_t callback;
     c_destroy_func_t destroy_notify;
     void *user_data;
 };
 
 static void
-dummy_property_destroy_notify_cb(rut_property_t *property,
+dummy_property_destroy_notify_cb(rig_property_t *property,
                                  void *user_data)
 {
-    rut_property_closure_t *closure = user_data;
+    rig_property_closure_t *closure = user_data;
 
     if (closure->destroy_notify)
         closure->destroy_notify(closure->user_data);
 
-    c_slice_free(rut_property_closure_t, closure);
+    c_slice_free(rig_property_closure_t, closure);
 }
 
 static void
-dummy_property_binding_wrapper_cb(rut_property_t *dummy_property,
+dummy_property_binding_wrapper_cb(rig_property_t *dummy_property,
                                   void *user_data)
 {
-    rut_property_closure_t *closure = user_data;
-    rut_property_t *property = rut_property_get_first_source(dummy_property);
+    rig_property_closure_t *closure = user_data;
+    rig_property_t *property = rig_property_get_first_source(dummy_property);
 
     closure->callback(property, closure->user_data);
 }
 
-rut_property_closure_t *
-rut_property_connect_callback_full(rut_property_t *property,
+rig_property_closure_t *
+rig_property_connect_callback_full(rig_property_t *property,
                                    rut_binding_callback_t callback,
                                    void *user_data,
                                    c_destroy_func_t destroy_notify)
 {
-    rut_property_closure_t *closure;
+    rig_property_closure_t *closure;
 
     c_return_val_if_fail(callback != NULL, NULL);
 
-    closure = c_slice_new(rut_property_closure_t);
-    rut_property_init(
+    closure = c_slice_new(rig_property_closure_t);
+    rig_property_init(
         &closure->dummy_prop, &dummy_property_spec, &dummy_object, 0); /* id */
     closure->callback = callback;
     closure->destroy_notify = destroy_notify;
     closure->user_data = user_data;
-    rut_property_set_binding_full(&closure->dummy_prop,
+    rig_property_set_binding_full(&closure->dummy_prop,
                                   dummy_property_binding_wrapper_cb,
                                   closure,
                                   dummy_property_destroy_notify_cb,
@@ -488,22 +488,22 @@ rut_property_connect_callback_full(rut_property_t *property,
     return closure;
 }
 
-rut_property_closure_t *
-rut_property_connect_callback(
-    rut_property_t *property, rut_binding_callback_t callback, void *user_data)
+rig_property_closure_t *
+rig_property_connect_callback(
+    rig_property_t *property, rut_binding_callback_t callback, void *user_data)
 {
-    return rut_property_connect_callback_full(
+    return rig_property_connect_callback_full(
         property, callback, user_data, NULL);
 }
 
 void
-rut_property_closure_destroy(rut_property_closure_t *closure)
+rig_property_closure_destroy(rig_property_closure_t *closure)
 {
-    rut_property_remove_binding(&closure->dummy_prop);
+    rig_property_remove_binding(&closure->dummy_prop);
 }
 
 void
-rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
+rig_property_dirty(rig_property_context_t *ctx, rig_property_t *property)
 {
     c_sllist_t *l;
     c_sllist_t *next;
@@ -513,7 +513,7 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
     {
         rut_object_t *object = property->object;
         if (object != &dummy_object) {
-            rut_property_change_t *change;
+            rig_property_change_t *change;
 
 #if 0
             c_debug(
@@ -528,11 +528,11 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
 #endif
 
             change = rut_memory_stack_alloc(ctx->change_log_stack,
-                                            sizeof(rut_property_change_t));
+                                            sizeof(rig_property_change_t));
 
             change->object = object;
             change->prop_id = property->id;
-            rut_property_box(property, &change->boxed);
+            rig_property_box(property, &change->boxed);
             ctx->log_len++;
         }
     }
@@ -542,8 +542,8 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
      * trigger the updates synchronously.
      */
     for (l = property->dependants; l; l = next) {
-        rut_property_t *dependant = l->data;
-        rut_property_binding_t *binding = dependant->binding;
+        rig_property_t *dependant = l->data;
+        rig_property_binding_t *binding = dependant->binding;
 
         next = l->next;
 
@@ -553,21 +553,21 @@ rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property)
 }
 
 void
-rut_property_box(rut_property_t *property, rut_boxed_t *boxed)
+rig_property_box(rig_property_t *property, rut_boxed_t *boxed)
 {
     boxed->type = property->spec->type;
 
-    switch ((rut_property_type_t)property->spec->type) {
+    switch ((rig_property_type_t)property->spec->type) {
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                       \
 case RUT_PROPERTY_TYPE_##TYPE: {                                           \
-    boxed->d.SUFFIX##_val = rut_property_get_##SUFFIX(property);           \
+    boxed->d.SUFFIX##_val = rig_property_get_##SUFFIX(property);           \
     break;                                                                 \
 }
 /* Special case the _POINTER types so we can take a reference on
  * objects... */
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
     case RUT_PROPERTY_TYPE_OBJECT: {
-        rut_object_t *obj = rut_property_get_object(property);
+        rut_object_t *obj = rig_property_get_object(property);
         if (obj)
             boxed->d.object_val = rut_object_ref(obj);
         else
@@ -575,7 +575,7 @@ case RUT_PROPERTY_TYPE_##TYPE: {                                           \
         break;
     }
     case RUT_PROPERTY_TYPE_ASSET: {
-        rut_object_t *obj = rut_property_get_asset(property);
+        rut_object_t *obj = rig_property_get_asset(property);
         if (obj)
             boxed->d.asset_val = rut_object_ref(obj);
         else
@@ -583,28 +583,28 @@ case RUT_PROPERTY_TYPE_##TYPE: {                                           \
         break;
     }
     case RUT_PROPERTY_TYPE_POINTER: {
-        boxed->d.pointer_val = rut_property_get_pointer(property);
+        boxed->d.pointer_val = rig_property_get_pointer(property);
         break;
     }
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)                                    \
 case RUT_PROPERTY_TYPE_##TYPE: {                                           \
     memcpy(&boxed->d.SUFFIX##_val,                                         \
-           rut_property_get_##SUFFIX(property),                            \
+           rig_property_get_##SUFFIX(property),                            \
            sizeof(boxed->d.SUFFIX##_val));                                 \
     break;                                                                 \
 }
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)                                   \
 case RUT_PROPERTY_TYPE_##TYPE: {                                           \
     memcpy(&boxed->d.SUFFIX##_val,                                         \
-           rut_property_get_##SUFFIX(property),                            \
+           rig_property_get_##SUFFIX(property),                            \
            sizeof(CTYPE) * LEN);                                           \
     break;                                                                 \
 }
     case RUT_PROPERTY_TYPE_TEXT:
-        boxed->d.text_val = c_strdup(rut_property_get_text(property));
+        boxed->d.text_val = c_strdup(rig_property_get_text(property));
         break;
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
     }
 
 #undef POINTER_TYPE
@@ -654,7 +654,7 @@ case RUT_PROPERTY_TYPE_##TYPE: {                                           \
         dst->d.text_val = c_strdup(src->d.text_val);
         return;
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
     }
 
 #undef POINTER_TYPE
@@ -696,7 +696,7 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef SCALAR_TYPE
 #undef POINTER_TYPE
@@ -710,8 +710,8 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
 }
 
 void
-rut_property_set_boxed(rut_property_context_t *ctx,
-                       rut_property_t *property,
+rig_property_set_boxed(rig_property_context_t *ctx,
+                       rig_property_t *property,
                        const rut_boxed_t *boxed)
 {
     /* Handle basic type conversion for scalar types only... */
@@ -721,13 +721,13 @@ rut_property_set_boxed(rut_property_context_t *ctx,
         switch (property->spec->type) {
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                       \
 case RUT_PROPERTY_TYPE_##TYPE:                                             \
-    rut_property_set_##SUFFIX(ctx, property, intermediate);                \
+    rig_property_set_##SUFFIX(ctx, property, intermediate);                \
     return;
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef SCALAR_TYPE
 #undef POINTER_TYPE
@@ -743,18 +743,18 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
     switch (boxed->type) {
 #define SET_BY_VAL(SUFFIX, CTYPE, TYPE)                                        \
 case RUT_PROPERTY_TYPE_##TYPE:                                             \
-    rut_property_set_##SUFFIX(ctx, property, boxed->d.SUFFIX##_val);       \
+    rig_property_set_##SUFFIX(ctx, property, boxed->d.SUFFIX##_val);       \
     return
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) SET_BY_VAL(SUFFIX, CTYPE, TYPE);
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE) SET_BY_VAL(SUFFIX, CTYPE, TYPE);
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)                                    \
 case RUT_PROPERTY_TYPE_##TYPE:                                             \
-    rut_property_set_##SUFFIX(ctx, property, &boxed->d.SUFFIX##_val);      \
+    rig_property_set_##SUFFIX(ctx, property, &boxed->d.SUFFIX##_val);      \
     return;
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) SET_BY_VAL(SUFFIX, CTYPE, TYPE);
         SET_BY_VAL(text, char *, TEXT);
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef ARRAY_TYPE
 #undef COMPOSITE_TYPE
@@ -768,7 +768,7 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
 
 char *
 rut_boxed_to_string(const rut_boxed_t *boxed,
-                    const rut_property_spec_t *spec)
+                    const rig_property_spec_t *spec)
 {
     switch (boxed->type) {
     case RUT_PROPERTY_TYPE_FLOAT:

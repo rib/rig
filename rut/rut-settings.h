@@ -31,7 +31,7 @@
 
 #include "rut-object.h"
 #include "rut-shell.h"
-#include "rut-property.h"
+#include "rig-property.h"
 #include "rut-closure.h"
 
 extern uint8_t _rut_nine_slice_indices_data[54];

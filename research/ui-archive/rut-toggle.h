@@ -58,7 +58,7 @@ void rut_toggle_set_enabled(rut_object_t *toggle, bool enabled);
 
 void rut_toggle_set_state(rut_object_t *toggle, bool state);
 
-rut_property_t *rut_toggle_get_enabled_property(rut_toggle_t *toggle);
+rig_property_t *rut_toggle_get_enabled_property(rut_toggle_t *toggle);
 
 /**
  * rut_toggle_set_tick:

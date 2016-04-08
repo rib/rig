@@ -62,7 +62,7 @@ typedef enum _undo_redo_op_t {
 
 typedef struct _undo_redo_set_property_t {
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t value0;
     rut_boxed_t value1;
 } undo_redo_set_property_t;
@@ -70,7 +70,7 @@ typedef struct _undo_redo_set_property_t {
 typedef struct _undo_redo_set_controller_const_t {
     rig_controller_t *controller;
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
     rut_boxed_t value0;
     rut_boxed_t value1;
 } undo_redo_set_controller_const_t;
@@ -78,7 +78,7 @@ typedef struct _undo_redo_set_controller_const_t {
 typedef struct _undo_redo_path_add_remove_t {
     rig_controller_t *controller;
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
     float t;
 
     //#warning "XXX: figure out how undo_redo_path_add_remove_t with async edits
@@ -93,7 +93,7 @@ typedef struct _undo_redo_path_add_remove_t {
 typedef struct _undo_redo_path_modify_t {
     rig_controller_t *controller;
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
     float t;
     rut_boxed_t value0;
     rut_boxed_t value1;
@@ -102,14 +102,14 @@ typedef struct _undo_redo_path_modify_t {
 typedef struct _undo_redo_set_controlled_t {
     rig_controller_t *controller;
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
     bool value;
 } undo_redo_set_controlled_t;
 
 typedef struct _undo_redo_set_control_method_t {
     rig_controller_t *controller;
     rut_object_t *object;
-    rut_property_t *property;
+    rig_property_t *property;
     rig_controller_method_t prev_method;
     rig_controller_method_t method;
 } undo_redo_set_control_method_t;
@@ -117,7 +117,7 @@ typedef struct _undo_redo_set_control_method_t {
 typedef struct {
     c_list_t link;
 
-    rut_property_t *property;
+    rig_property_t *property;
 
     rig_controller_method_t method;
     rig_path_t *path;
@@ -202,19 +202,19 @@ void rig_undo_journal_log_remove_controller(rig_undo_journal_t *journal,
 
 void rig_undo_journal_set_controlled(rig_undo_journal_t *journal,
                                      rig_controller_t *controller,
-                                     rut_property_t *property,
+                                     rig_property_t *property,
                                      bool value);
 
 void rig_undo_journal_set_control_method(rig_undo_journal_t *journal,
                                          rig_controller_t *controller,
-                                         rut_property_t *property,
+                                         rig_property_t *property,
                                          rig_controller_method_t method);
 
 void rig_undo_journal_set_controller_constant(rig_undo_journal_t *journal,
                                               bool mergable,
                                               rig_controller_t *controller,
                                               const rut_boxed_t *value,
-                                              rut_property_t *property);
+                                              rig_property_t *property);
 
 void
 rig_undo_journal_set_controller_path_node_value(rig_undo_journal_t *journal,
@@ -222,11 +222,11 @@ rig_undo_journal_set_controller_path_node_value(rig_undo_journal_t *journal,
                                                 rig_controller_t *controller,
                                                 float t,
                                                 const rut_boxed_t *value,
-                                                rut_property_t *property);
+                                                rig_property_t *property);
 
 void rig_undo_journal_remove_controller_path_node(rig_undo_journal_t *journal,
                                                   rig_controller_t *controller,
-                                                  rut_property_t *property,
+                                                  rig_property_t *property,
                                                   float t);
 
 #if 0
@@ -247,7 +247,7 @@ rig_undo_journal_move_controller_path_nodes (rig_undo_journal_t *journal,
 void rig_undo_journal_set_property(rig_undo_journal_t *journal,
                                    bool mergable,
                                    const rut_boxed_t *value,
-                                   rut_property_t *property);
+                                   rig_property_t *property);
 
 void rig_undo_journal_add_entity(rig_undo_journal_t *journal,
                                  rig_entity_t *parent_entity,

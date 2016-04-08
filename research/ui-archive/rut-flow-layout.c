@@ -112,12 +112,12 @@ struct _rut_flow_layout_t {
     int last_flow_line_length;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_FLOW_LAYOUT_N_PROPS];
+    rig_property_t properties[RUT_FLOW_LAYOUT_N_PROPS];
 
     unsigned int needs_reflow : 1;
 };
 
-static rut_property_spec_t _rut_flow_layout_prop_specs[] = {
+static rig_property_spec_t _rut_flow_layout_prop_specs[] = {
 
     /**
      * rut_flow_layout_t:packing:
@@ -779,7 +779,7 @@ rut_flow_layout_set_packing(rut_flow_layout_t *flow,
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->shell->property_ctx,
+    rig_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_PACKING]);
 }
 
@@ -800,7 +800,7 @@ rut_flow_layout_set_x_padding(rut_flow_layout_t *flow, int padding)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->shell->property_ctx,
+    rig_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_X_PADDING]);
 }
 
@@ -821,7 +821,7 @@ rut_flow_layout_set_y_padding(rut_flow_layout_t *flow, int padding)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->shell->property_ctx,
+    rig_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_Y_PADDING]);
 }
 
@@ -842,7 +842,7 @@ rut_flow_layout_set_min_child_width(rut_flow_layout_t *flow, int min_width)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->shell->property_ctx,
+    rig_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_MIN_CHILD_WIDTH]);
 }
 
@@ -863,7 +863,7 @@ rut_flow_layout_set_max_child_width(rut_flow_layout_t *flow, int max_width)
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(&flow->shell->property_ctx,
+    rig_property_dirty(&flow->shell->property_ctx,
                        &flow->properties[RUT_FLOW_LAYOUT_PROP_MAX_CHILD_WIDTH]);
 }
 
@@ -885,7 +885,7 @@ rut_flow_layout_set_min_child_height(rut_flow_layout_t *flow,
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &flow->shell->property_ctx,
         &flow->properties[RUT_FLOW_LAYOUT_PROP_MIN_CHILD_HEIGHT]);
 }
@@ -908,7 +908,7 @@ rut_flow_layout_set_max_child_height(rut_flow_layout_t *flow,
     queue_allocation(flow);
     preferred_size_changed(flow);
 
-    rut_property_dirty(
+    rig_property_dirty(
         &flow->shell->property_ctx,
         &flow->properties[RUT_FLOW_LAYOUT_PROP_MAX_CHILD_HEIGHT]);
 }

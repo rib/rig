@@ -84,10 +84,10 @@ struct _rut_nine_slice_t {
     c_list_t updated_cb_list;
 
     rut_introspectable_props_t introspectable;
-    rut_property_t properties[RUT_NINE_SLICE_N_PROPS];
+    rig_property_t properties[RUT_NINE_SLICE_N_PROPS];
 };
 
-static rut_property_spec_t _rut_nine_slice_prop_specs[] = {
+static rig_property_spec_t _rut_nine_slice_prop_specs[] = {
     { .name = "width",
       .nick = "Width",
       .type = RUT_PROPERTY_TYPE_FLOAT,
@@ -589,9 +589,9 @@ rut_nine_slice_set_size(rut_object_t *self, float width, float height)
     nine_slice->width = width;
     nine_slice->height = height;
 
-    rut_property_dirty(&nine_slice->shell->property_ctx,
+    rig_property_dirty(&nine_slice->shell->property_ctx,
                        &nine_slice->properties[RUT_NINE_SLICE_PROP_WIDTH]);
-    rut_property_dirty(&nine_slice->shell->property_ctx,
+    rig_property_dirty(&nine_slice->shell->property_ctx,
                        &nine_slice->properties[RUT_NINE_SLICE_PROP_HEIGHT]);
 
     rut_closure_list_invoke(&nine_slice->updated_cb_list,
@@ -654,7 +654,7 @@ rut_nine_slice_add_update_callback(rut_nine_slice_t *nine_slice,
             return;                                                            \
         nine_slice->PROP_LC = PROP_LC;                                         \
         free_mesh(nine_slice);                                                 \
-        rut_property_dirty(                                                    \
+        rig_property_dirty(                                                    \
             &nine_slice->shell->property_ctx,                                    \
             &nine_slice->properties[RUT_NINE_SLICE_PROP_##PROP_UC]);           \
         rut_closure_list_invoke(&nine_slice->updated_cb_list,                  \

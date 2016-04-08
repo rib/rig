@@ -32,7 +32,7 @@
 #ifndef __RUT_PROPERTY_BARE_H__
 #define __RUT_PROPERTY_BARE_H__
 
-typedef enum _rut_property_type_t {
+typedef enum _rig_property_type_t {
     RUT_PROPERTY_TYPE_FLOAT = 1,
     RUT_PROPERTY_TYPE_DOUBLE,
     RUT_PROPERTY_TYPE_INTEGER,
@@ -53,10 +53,10 @@ typedef enum _rut_property_type_t {
      */
     RUT_PROPERTY_TYPE_ASSET,
     RUT_PROPERTY_TYPE_POINTER,
-} rut_property_type_t;
+} rig_property_type_t;
 
 typedef struct _rut_boxed_t {
-    rut_property_type_t type;
+    rig_property_type_t type;
     union {
         float float_val;
         double double_val;
@@ -75,69 +75,69 @@ typedef struct _rut_boxed_t {
     } d;
 } rut_boxed_t;
 
-typedef struct _rut_property_change_t {
+typedef struct _rig_property_change_t {
     void *object;
     rut_boxed_t boxed;
     int prop_id;
-} rut_property_change_t;
+} rig_property_change_t;
 
-typedef struct _rut_property_context_t {
+typedef struct _rig_property_context_t {
     int logging_disabled;
     int magic_marker;
     rut_memory_stack_t *change_log_stack;
     int log_len;
-} rut_property_context_t;
+} rig_property_context_t;
 
-typedef struct _rut_property_t rut_property_t;
+typedef struct _rig_property_t rig_property_t;
 
-typedef void (*rut_property_update_callback_t)(rut_property_t *property,
+typedef void (*rig_property_update_callback_t)(rig_property_t *property,
                                                void *user_data);
 
-typedef union _rut_property_default_t {
+typedef union _rig_property_default_t {
     int integer;
     bool boolean;
     const void *pointer;
-} rut_property_default_t;
+} rig_property_default_t;
 
-typedef struct _rut_property_validation_integer_t {
+typedef struct _rig_property_validation_integer_t {
     int min;
     int max;
-} rut_property_validation_integer_t;
+} rig_property_validation_integer_t;
 
-typedef struct _rut_property_validation_float_t {
+typedef struct _rig_property_validation_float_t {
     float min;
     float max;
-} rut_property_validation_float_t;
+} rig_property_validation_float_t;
 
-typedef struct _rut_property_validation_vec3_t {
+typedef struct _rig_property_validation_vec3_t {
     float min;
     float max;
-} rut_property_validation_vec3_t;
+} rig_property_validation_vec3_t;
 
-typedef struct _rut_property_validation_vec4_t {
+typedef struct _rig_property_validation_vec4_t {
     float min;
     float max;
-} rut_property_validation_vec4_t;
+} rig_property_validation_vec4_t;
 
-typedef struct _rut_property_validation_object_t {
+typedef struct _rig_property_validation_object_t {
     rut_type_t *type;
-} rut_property_validation_object_t;
+} rig_property_validation_object_t;
 
-typedef struct _rut_property_validation_asset_t {
+typedef struct _rig_property_validation_asset_t {
     rig_asset_type_t type;
-} rut_property_validation_asset_t;
+} rig_property_validation_asset_t;
 
-typedef union _rut_property_validation_t {
-    rut_property_validation_integer_t int_range;
-    rut_property_validation_float_t float_range;
-    rut_property_validation_vec3_t vec3_range;
-    rut_property_validation_vec4_t vec4_range;
-    rut_property_validation_object_t object;
-    rut_property_validation_asset_t asset;
+typedef union _rig_property_validation_t {
+    rig_property_validation_integer_t int_range;
+    rig_property_validation_float_t float_range;
+    rig_property_validation_vec3_t vec3_range;
+    rig_property_validation_vec4_t vec4_range;
+    rig_property_validation_object_t object;
+    rig_property_validation_asset_t asset;
     const rut_ui_enum_t *ui_enum;
-} rut_property_validation_t;
+} rig_property_validation_t;
 
-typedef enum _rut_property_flags_t {
+typedef enum _rig_property_flags_t {
     RUT_PROPERTY_FLAG_READABLE = 1 << 0,
     RUT_PROPERTY_FLAG_WRITABLE = 1 << 1,
     RUT_PROPERTY_FLAG_VALIDATE = 1 << 2,
@@ -146,9 +146,9 @@ typedef enum _rut_property_flags_t {
     RUT_PROPERTY_FLAG_EXPORT_FRONTEND = 1 << 3, /* Changes affect rendering and
                                                    should be fowarded to
                                                    frontend */
-} rut_property_flags_t;
+} rig_property_flags_t;
 
-typedef struct _rut_property_spec_t {
+typedef struct _rig_property_spec_t {
     const char *name;
 
     /* XXX: this might be too limited since it means we can't have
@@ -207,30 +207,30 @@ typedef struct _rut_property_spec_t {
 
     const char *nick;
     const char *blurb;
-    rut_property_flags_t flags;
-    rut_property_default_t default_value;
-    rut_property_validation_t validation;
+    rig_property_flags_t flags;
+    rig_property_default_t default_value;
+    rig_property_validation_t validation;
 
     unsigned int type : 16;
     unsigned int is_ui_property : 1;
     /* Whether this property is allowed to be animatable or not */
     unsigned int animatable : 1;
-} rut_property_spec_t;
+} rig_property_spec_t;
 
 /* Note: we intentionally don't pass a pointer to a "source property"
- * that is the property that has changed because rut_property_t is
+ * that is the property that has changed because rig_property_t is
  * designed so that we can defer binding callbacks until the mainloop
  * so we can avoid redundant callbacks in cases where multiple
  * dependencies of a property may be changed. */
-typedef void (*rut_binding_callback_t)(rut_property_t *target_property,
+typedef void (*rut_binding_callback_t)(rig_property_t *target_property,
                                        void *user_data);
 
-typedef void (*rut_binding_destroy_notify_t)(rut_property_t *property,
+typedef void (*rut_binding_destroy_notify_t)(rig_property_t *property,
                                              void *user_data);
 
 /* XXX: make sure bindings get freed if any of of the dependency
  * properties are destroyed. */
-typedef struct _rut_property_binding_t {
+typedef struct _rig_property_binding_t {
     rut_binding_callback_t callback;
     rut_binding_destroy_notify_t destroy_notify;
     void *user_data;
@@ -238,13 +238,13 @@ typedef struct _rut_property_binding_t {
      * know the dependencies so we can remove this property from the
      * corresponding list of dependants for each dependency.
      */
-    rut_property_t *dependencies[];
-} rut_property_binding_t;
+    rig_property_t *dependencies[];
+} rig_property_binding_t;
 
-struct _rut_property_t {
-    const rut_property_spec_t *spec;
+struct _rig_property_t {
+    const rig_property_spec_t *spec;
     c_sllist_t *dependants;
-    rut_property_binding_t *binding; /* Maybe make this a list of bindings? */
+    rig_property_binding_t *binding; /* Maybe make this a list of bindings? */
     void *object;
 
     uint16_t queued_count;
@@ -261,11 +261,11 @@ struct _rut_property_t {
                    than 255 properties per object */
 };
 
-void rut_property_dirty(rut_property_context_t *ctx, rut_property_t *property);
+void rig_property_dirty(rig_property_context_t *ctx, rig_property_t *property);
 
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                                   \
-static inline void rut_property_set_##SUFFIX(                              \
-    rut_property_context_t *ctx, rut_property_t *property, CTYPE value)    \
+static inline void rig_property_set_##SUFFIX(                              \
+    rig_property_context_t *ctx, rig_property_t *property, CTYPE value)    \
 {                                                                          \
                                                                            \
     if (property->spec->setter.any_type) {                                 \
@@ -282,10 +282,10 @@ static inline void rut_property_set_##SUFFIX(                              \
             return;                                                        \
                                                                            \
         *data = value;                                                     \
-        rut_property_dirty(ctx, property);                                 \
+        rig_property_dirty(ctx, property);                                 \
     }                                                                      \
 }                                                                          \
-static inline CTYPE rut_property_get_##SUFFIX(rut_property_t *property)    \
+static inline CTYPE rig_property_get_##SUFFIX(rig_property_t *property)    \
 {                                                                          \
     c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
                          0);                                               \
@@ -302,8 +302,8 @@ static inline CTYPE rut_property_get_##SUFFIX(rut_property_t *property)    \
 #define POINTER_TYPE(SUFFIX, CTYPE, TYPE) SCALAR_TYPE(SUFFIX, CTYPE, TYPE)
 
 #define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)                                    \
-static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
-                                             rut_property_t *property,     \
+static inline void rig_property_set_##SUFFIX(rig_property_context_t *ctx,  \
+                                             rig_property_t *property,     \
                                              const CTYPE *value)           \
 {                                                                          \
     c_return_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE);    \
@@ -314,11 +314,11 @@ static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
         CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
                                 property->spec->data_offset);              \
         *data = *value;                                                    \
-        rut_property_dirty(ctx, property);                                 \
+        rig_property_dirty(ctx, property);                                 \
     }                                                                      \
 }                                                                          \
-static inline const CTYPE *rut_property_get_##SUFFIX(                      \
-    rut_property_t *property)                                              \
+static inline const CTYPE *rig_property_get_##SUFFIX(                      \
+    rig_property_t *property)                                              \
 {                                                                          \
     c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
                          0);                                               \
@@ -333,8 +333,8 @@ static inline const CTYPE *rut_property_get_##SUFFIX(                      \
 }
 
 #define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)                                   \
-static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
-                                             rut_property_t *property,     \
+static inline void rig_property_set_##SUFFIX(rig_property_context_t *ctx,  \
+                                             rig_property_t *property,     \
                                              const CTYPE value[LEN])       \
 {                                                                          \
                                                                            \
@@ -346,11 +346,11 @@ static inline void rut_property_set_##SUFFIX(rut_property_context_t *ctx,  \
         CTYPE *data = (CTYPE *)((uint8_t *)property->object +              \
                                 property->spec->data_offset);              \
         memcpy(data, value, sizeof(CTYPE) * LEN);                          \
-        rut_property_dirty(ctx, property);                                 \
+        rig_property_dirty(ctx, property);                                 \
     }                                                                      \
 }                                                                          \
-static inline const CTYPE *rut_property_get_##SUFFIX(                      \
-    rut_property_t *property)                                              \
+static inline const CTYPE *rig_property_get_##SUFFIX(                      \
+    rig_property_t *property)                                              \
 {                                                                          \
     c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_##TYPE, \
                          0);                                               \
@@ -364,7 +364,7 @@ static inline const CTYPE *rut_property_get_##SUFFIX(                      \
     }                                                                      \
 }
 
-#include "rut-property-types.h"
+#include "rig-property-types.h"
 
 #undef ARRAY_TYPE
 #undef POINTER_TYPE
@@ -372,8 +372,8 @@ static inline const CTYPE *rut_property_get_##SUFFIX(                      \
 #undef SCALAR_TYPE
 
 static inline void
-rut_property_set_text(rut_property_context_t *ctx,
-                      rut_property_t *property,
+rig_property_set_text(rig_property_context_t *ctx,
+                      rig_property_t *property,
                       const char *value)
 {
     char **data =
@@ -387,12 +387,12 @@ rut_property_set_text(rut_property_context_t *ctx,
         if (*data)
             c_free(*data);
         *data = c_strdup(value);
-        rut_property_dirty(ctx, property);
+        rig_property_dirty(ctx, property);
     }
 }
 
 static inline const char *
-rut_property_get_text(rut_property_t *property)
+rig_property_get_text(rig_property_t *property)
 {
     c_return_val_if_fail(property->spec->type == RUT_PROPERTY_TYPE_TEXT, 0);
 
