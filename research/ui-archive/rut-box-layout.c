@@ -32,7 +32,7 @@
 #include "rut-box-layout.h"
 #include "rut-transform.h"
 #include "rut-util.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 enum {
     RUT_BOX_LAYOUT_PROP_PACKING,
@@ -78,7 +78,7 @@ struct _rut_box_layout_t {
 
     rut_graphable_props_t graphable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_BOX_LAYOUT_N_PROPS];
 };
 
@@ -514,7 +514,7 @@ rut_box_layout_new(rut_shell_t *shell,
 
     rut_graphable_init(box);
 
-    rut_introspectable_init(box, _rut_box_layout_prop_specs, box->properties);
+    rig_introspectable_init(box, _rut_box_layout_prop_specs, box->properties);
 
     queue_allocation(box);
 

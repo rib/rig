@@ -40,7 +40,7 @@
 #include "rut-input-region.h"
 #include "rut-inputable.h"
 #include "rut-pickable.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-camera.h"
 
 enum {
@@ -56,7 +56,7 @@ struct _rut_color_button_t {
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_COLOR_BUTTON_N_PROPS];
 
     int width, height;
@@ -118,7 +118,7 @@ _rut_color_button_free(void *object)
 
     rut_object_unref(button->shell);
 
-    rut_introspectable_destroy(button);
+    rig_introspectable_destroy(button);
     rut_graphable_destroy(button);
 
     rut_object_free(rut_color_button_t, button);
@@ -431,7 +431,7 @@ show_picker(rut_color_button_t *button, rut_object_t *camera)
         ;
 
     picker_color_prop =
-        rut_introspectable_lookup_property(button->picker, "color");
+        rig_introspectable_lookup_property(button->picker, "color");
 
     if (picker_color_prop) {
         rig_property_t *button_color_prop =
@@ -602,7 +602,7 @@ rut_color_button_new(rut_shell_t *shell)
     rut_paintable_init(button);
     rut_graphable_init(button);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         button, _rut_color_button_prop_specs, button->properties);
 
     button->input_region = rut_input_region_new_rectangle(

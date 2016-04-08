@@ -28,7 +28,7 @@
 
 #include <rut-config.h>
 
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 typedef struct _copy_properties_state_t {
     rig_property_context_t *property_ctx;
@@ -41,7 +41,7 @@ copy_property_cb(rig_property_t *property, void *user_data)
     copy_properties_state_t *state = user_data;
     rut_object_t *dst = state->dst;
     rig_property_t *dst_property =
-        rut_introspectable_lookup_property(dst, property->spec->name);
+        rig_introspectable_lookup_property(dst, property->spec->name);
 
     c_return_if_fail(dst_property != NULL);
 
@@ -49,20 +49,20 @@ copy_property_cb(rig_property_t *property, void *user_data)
 }
 
 void
-rut_introspectable_copy_properties(rig_property_context_t *property_ctx,
+rig_introspectable_copy_properties(rig_property_context_t *property_ctx,
                                    rut_object_t *src,
                                    rut_object_t *dst)
 {
     copy_properties_state_t state = { property_ctx, dst };
-    rut_introspectable_foreach_property(src, copy_property_cb, &state);
+    rig_introspectable_foreach_property(src, copy_property_cb, &state);
 }
 
 void
-rut_introspectable_init(rut_object_t *object,
+rig_introspectable_init(rut_object_t *object,
                         rig_property_spec_t *specs,
                         rig_property_t *properties)
 {
-    rut_introspectable_props_t *props =
+    rig_introspectable_props_t *props =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
     int n;
 
@@ -75,9 +75,9 @@ rut_introspectable_init(rut_object_t *object,
 }
 
 void
-rut_introspectable_destroy(rut_object_t *object)
+rig_introspectable_destroy(rut_object_t *object)
 {
-    rut_introspectable_props_t *props =
+    rig_introspectable_props_t *props =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
     rig_property_t *properties = props->first_property;
     int i;
@@ -87,10 +87,10 @@ rut_introspectable_destroy(rut_object_t *object)
 }
 
 rig_property_t *
-rut_introspectable_lookup_property(rut_object_t *object,
+rig_introspectable_lookup_property(rut_object_t *object,
                                    const char *name)
 {
-    rut_introspectable_props_t *priv =
+    rig_introspectable_props_t *priv =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
     int i;
 
@@ -104,12 +104,12 @@ rut_introspectable_lookup_property(rut_object_t *object,
 }
 
 void
-rut_introspectable_foreach_property(
+rig_introspectable_foreach_property(
     rut_object_t *object,
-    rut_introspectable_property_callback_t callback,
+    rig_introspectable_property_callback_t callback,
     void *user_data)
 {
-    rut_introspectable_props_t *priv =
+    rig_introspectable_props_t *priv =
         rut_object_get_properties(object, RUT_TRAIT_ID_INTROSPECTABLE);
     int i;
 

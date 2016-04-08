@@ -64,7 +64,7 @@ struct _rut_rotation_inspector_t {
 
     c_quaternion_t value;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_ROTATION_INSPECTOR_N_PROPS];
 };
 
@@ -88,7 +88,7 @@ _rut_rotation_inspector_free(void *object)
 {
     rut_rotation_inspector_t *inspector = object;
 
-    rut_introspectable_destroy(inspector);
+    rig_introspectable_destroy(inspector);
     rut_graphable_destroy(inspector);
 
     rut_object_free(rut_rotation_inspector_t, inspector);
@@ -264,7 +264,7 @@ rut_rotation_inspector_new(rut_shell_t *shell)
 
     rut_graphable_init(inspector);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         inspector, _rut_rotation_inspector_prop_specs, inspector->properties);
 
     inspector->hbox =
@@ -297,7 +297,7 @@ rut_rotation_inspector_new(rut_shell_t *shell)
             rut_object_unref(text);
         }
 
-        inspector->components[i].property = rut_introspectable_lookup_property(
+        inspector->components[i].property = rig_introspectable_lookup_property(
             inspector->components[i].slider, "value");
     }
 
@@ -327,7 +327,7 @@ rut_rotation_inspector_new(rut_shell_t *shell)
     rut_number_slider_set_markup_label(inspector->components[3].slider,
                                        "<span foreground=\"yellow\">a:</span>");
 
-    inspector->components[3].property = rut_introspectable_lookup_property(
+    inspector->components[3].property = rig_introspectable_lookup_property(
         inspector->components[3].slider, "value");
 
     text = rut_text_new_with_text(shell, NULL, "°");

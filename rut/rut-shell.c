@@ -50,7 +50,6 @@
 #include "rut-transform.h"
 #include "rut-input-region.h"
 #include "rut-mimable.h"
-#include "rut-introspectable.h"
 #include "rut-camera.h"
 #include "rut-poll.h"
 #include "rut-geometry.h"

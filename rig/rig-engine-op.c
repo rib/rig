@@ -157,7 +157,7 @@ _apply_op_set_property(rig_engine_op_apply_context_t *ctx,
         return false;
 
     property =
-        rut_introspectable_get_property(object, set_property->property_id);
+        rig_introspectable_get_property(object, set_property->property_id);
 
     /* XXX: ideally we shouldn't need to init a rut_boxed_t and set
      * that on a property, and instead we could just directly
@@ -855,7 +855,7 @@ _apply_op_controller_set_const(rig_engine_op_apply_context_t *ctx,
     if (!controller || !object)
         return false;
 
-    property = rut_introspectable_get_property(object, set_const->property_id);
+    property = rig_introspectable_get_property(object, set_const->property_id);
 
     if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
                                  property->spec->type, set_const->value))
@@ -957,7 +957,7 @@ _apply_op_controller_path_add_node(rig_engine_op_apply_context_t *ctx,
     if (!controller || !object)
         return false;
 
-    property = rut_introspectable_get_property(object, add_node->property_id);
+    property = rig_introspectable_get_property(object, add_node->property_id);
 
     if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
                                  property->spec->type, add_node->value))
@@ -1059,7 +1059,7 @@ _apply_op_controller_path_delete_node(rig_engine_op_apply_context_t *ctx,
         return false;
 
     property =
-        rut_introspectable_get_property(object, delete_node->property_id);
+        rig_introspectable_get_property(object, delete_node->property_id);
 
     controller_path_delete_node_apply_real(
         ctx, controller, property, delete_node->t);
@@ -1153,7 +1153,7 @@ _apply_op_controller_path_set_node(rig_engine_op_apply_context_t *ctx,
     if (!controller || !object)
         return false;
 
-    property = rut_introspectable_get_property(object, set_node->property_id);
+    property = rig_introspectable_get_property(object, set_node->property_id);
 
     if (!rig_pb_init_boxed_value(ctx->unserializer, &boxed,
                                  property->spec->type, set_node->value))
@@ -1253,7 +1253,7 @@ _apply_op_controller_add_property(rig_engine_op_apply_context_t *ctx,
         return false;
 
     property =
-        rut_introspectable_get_property(object, add_property->property_id);
+        rig_introspectable_get_property(object, add_property->property_id);
 
     controller_add_property_apply_real(ctx, controller, property);
 
@@ -1339,7 +1339,7 @@ _apply_op_controller_remove_property(rig_engine_op_apply_context_t *ctx,
         return false;
 
     property =
-        rut_introspectable_get_property(object, remove_property->property_id);
+        rig_introspectable_get_property(object, remove_property->property_id);
 
     controller_remove_property_apply_real(ctx, controller, property);
 
@@ -1427,7 +1427,7 @@ _apply_op_controller_property_set_method(rig_engine_op_apply_context_t *ctx,
     if (!controller || !object)
         return false;
 
-    property = rut_introspectable_get_property(object, set_method->property_id);
+    property = rig_introspectable_get_property(object, set_method->property_id);
 
     controller_property_set_method_apply_real(
         ctx, controller, property, set_method->method);

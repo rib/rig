@@ -857,7 +857,7 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
         rig_property_t *scale_prop;
         rut_boxed_t boxed;
 
-        scale_prop = rut_introspectable_get_property (entity,
+        scale_prop = rig_introspectable_get_property (entity,
                                                       RUT_ENTITY_PROP_SCALE);
 #if 1
         boxed.type = RUT_PROPERTY_TYPE_FLOAT;

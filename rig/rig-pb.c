@@ -426,7 +426,7 @@ serialize_instrospectable_properties(rut_object_t *object,
                                      rig_pb_serializer_t *serializer)
 {
     serializer->n_properties = 0;
-    rut_introspectable_foreach_property(
+    rig_introspectable_foreach_property(
         object, count_instrospectables_cb, serializer);
     *n_properties_out = serializer->n_properties;
 
@@ -436,7 +436,7 @@ serialize_instrospectable_properties(rut_object_t *object,
                                                                C_ALIGNOF(void *));
 
     serializer->n_properties = 0;
-    rut_introspectable_foreach_property(
+    rig_introspectable_foreach_property(
         object, serialize_instrospectables_cb, serializer);
 }
 
@@ -2011,7 +2011,7 @@ set_properties_from_pb_boxed_values(rig_pb_un_serializer_t *unserializer,
     for (i = 0; i < n_properties; i++) {
         Rig__Boxed *pb_boxed = properties[i];
         rig_property_t *property =
-            rut_introspectable_lookup_property(object, pb_boxed->name);
+            rig_introspectable_lookup_property(object, pb_boxed->name);
 
         if (!property) {
             rig_pb_unserializer_collect_error(unserializer,
@@ -2607,7 +2607,7 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
         }
 
         property =
-            rut_introspectable_lookup_property(object, pb_property->name);
+            rig_introspectable_lookup_property(object, pb_property->name);
 
         if (!property) {
             rig_pb_unserializer_collect_error(unserializer,
@@ -2697,7 +2697,7 @@ rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
                     break;
                 }
 
-                dependency = rut_introspectable_lookup_property(
+                dependency = rig_introspectable_lookup_property(
                     dependency_object, pb_dependency->name);
                 if (!dependency) {
                     rig_pb_unserializer_collect_error(unserializer,

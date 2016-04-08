@@ -121,7 +121,7 @@ _rig_controller_free(rut_object_t *object)
 
     rut_closure_list_disconnect_all_FIXME(&controller->operation_cb_list);
 
-    rut_introspectable_destroy(controller);
+    rig_introspectable_destroy(controller);
 
     c_hash_table_destroy(controller->properties);
 
@@ -195,7 +195,7 @@ rig_controller_new(rig_engine_t *engine, const char *label)
 
     c_list_init(&controller->operation_cb_list);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         controller, _rig_controller_prop_specs, controller->props);
 
     controller->properties = c_hash_table_new_full(c_direct_hash,
@@ -206,12 +206,12 @@ rig_controller_new(rig_engine_t *engine, const char *label)
     rig_property_set_copy_binding(
         &engine->shell->property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_PROGRESS],
-        rut_introspectable_lookup_property(timeline, "progress"));
+        rig_introspectable_lookup_property(timeline, "progress"));
 
     rig_property_set_copy_binding(
         &engine->shell->property_ctx,
         &controller->props[RIG_CONTROLLER_PROP_ELAPSED],
-        rut_introspectable_lookup_property(timeline, "elapsed"));
+        rig_introspectable_lookup_property(timeline, "elapsed"));
 
     return controller;
 }
@@ -622,7 +622,7 @@ rig_controller_find_prop_data(rig_controller_t *controller,
                               const char *property_name)
 {
     rig_property_t *property =
-        rut_introspectable_lookup_property(object, property_name);
+        rig_introspectable_lookup_property(object, property_name);
 
     if (!property)
         return NULL;

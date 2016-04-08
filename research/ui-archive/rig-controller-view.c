@@ -1596,15 +1596,15 @@ rig_path_view_new(rig_controller_property_view_t *prop_view, rig_path_t *path)
     path_view->path_operation_closure = rig_path_add_operation_callback(
         path, path_operation_cb, path_view, NULL /* destroy_cb */);
 
-    offset_prop = rut_introspectable_lookup_property(view->scale, "offset");
+    offset_prop = rig_introspectable_lookup_property(view->scale, "offset");
     path_view->scale_offset_prop_closure =
         rig_property_connect_callback(offset_prop, scale_changed_cb, path_view);
 
-    scale_prop = rut_introspectable_lookup_property(view->scale, "user_scale");
+    scale_prop = rig_introspectable_lookup_property(view->scale, "user_scale");
     path_view->scale_prop_closure =
         rig_property_connect_callback(scale_prop, scale_changed_cb, path_view);
 
-    len_prop = rut_introspectable_lookup_property(view->scale, "length");
+    len_prop = rig_introspectable_lookup_property(view->scale, "length");
     path_view->scale_len_prop_closure =
         rig_property_connect_callback(len_prop, scale_changed_cb, path_view);
 
@@ -2069,7 +2069,7 @@ setup_method_drop_down(rig_controller_property_view_t *prop_view)
 
     rut_drop_down_set_value(drop_down, prop_view->prop_data->method);
 
-    drop_property = rut_introspectable_lookup_property(drop_down, "value");
+    drop_property = rig_introspectable_lookup_property(drop_down, "value");
     rig_property_connect_callback(
         drop_property, method_drop_down_change_cb, prop_view);
 }
@@ -2370,9 +2370,9 @@ rig_controller_object_view_new(rig_controller_view_t *view,
 #endif
 
     fold_label_property =
-        rut_introspectable_lookup_property(object_view->fold, "label");
+        rig_introspectable_lookup_property(object_view->fold, "label");
 
-    label_property = rut_introspectable_lookup_property(object, "label");
+    label_property = rig_introspectable_lookup_property(object, "label");
     object_view->label_property = label_property;
 
     if (label_property) {
@@ -3821,11 +3821,11 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
                             view,
                             controller);
 
-    scale_len_prop = rut_introspectable_lookup_property(view->scale, "length");
+    scale_len_prop = rig_introspectable_lookup_property(view->scale, "length");
 
     if (view->controller) {
         rig_property_t *controller_elapsed_prop =
-            rut_introspectable_lookup_property(view->controller, "elapsed");
+            rig_introspectable_lookup_property(view->controller, "elapsed");
 
         rig_controller_view_clear_object_views(view);
 
@@ -3857,13 +3857,13 @@ rig_controller_view_set_controller(rig_controller_view_t *view,
             controller, controller_operation_cb, view, NULL /* destroy */);
 
         controller_len_prop =
-            rut_introspectable_lookup_property(controller, "length");
+            rig_introspectable_lookup_property(controller, "length");
         rig_property_set_copy_binding(&view->engine->shell->property_ctx,
                                       scale_len_prop,
                                       controller_len_prop);
 
         scale_focus_prop =
-            rut_introspectable_lookup_property(view->scale, "focus");
+            rig_introspectable_lookup_property(view->scale, "focus");
         rig_property_connect_callback(
             scale_focus_prop, on_scale_focus_change_cb, view);
     }
@@ -4023,7 +4023,7 @@ rig_controller_view_new(rig_editor_t *editor,
     controller_selector = rut_drop_down_new(engine->shell);
     view->controller_selector = controller_selector;
     value_prop =
-        rut_introspectable_lookup_property(controller_selector, "value");
+        rig_introspectable_lookup_property(controller_selector, "value");
     rig_property_connect_callback(value_prop, controller_select_cb, view);
     rut_box_layout_add(selector_hbox, false, controller_selector);
     rut_object_unref(controller_selector);

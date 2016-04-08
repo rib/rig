@@ -312,7 +312,7 @@ _rig_shape_free(void *object)
     if (shape->shape_asset)
         rut_object_unref(shape->shape_asset);
 
-    rut_introspectable_destroy(shape);
+    rig_introspectable_destroy(shape);
 
     rut_closure_list_remove_all(&shape->reshaped_cb_list);
 
@@ -404,7 +404,7 @@ rig_shape_new(rig_engine_t *engine, bool shaped, int width, int height)
 
     c_list_init(&shape->reshaped_cb_list);
 
-    rut_introspectable_init(shape, _rig_shape_prop_specs, shape->properties);
+    rig_introspectable_init(shape, _rig_shape_prop_specs, shape->properties);
 
     return shape;
 }

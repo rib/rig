@@ -84,7 +84,7 @@ typedef struct _flibble_t
 {
     float x;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_FLIBBLE_N_PROPS];
 
 } flibble_t;
@@ -109,7 +109,7 @@ flibble_free (void *object)
 {
     /* SNIP */
 
-    rut_introspectable_destroy (flibble);
+    rig_introspectable_destroy (flibble);
 
     /* SNIP */
 }
@@ -121,7 +121,7 @@ flibble_new (void)
 {
     /* SNIP */
 
-    rut_introspectable_init (flibble,
+    rig_introspectable_init (flibble,
                              flibble_prop_specs,
                              flibble->properties);
 

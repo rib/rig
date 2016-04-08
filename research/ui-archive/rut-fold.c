@@ -59,7 +59,7 @@ _rut_fold_free(void *object)
     rut_object_unref(fold->fold_down_icon);
 
     rut_graphable_destroy(fold);
-    rut_introspectable_destroy(fold);
+    rig_introspectable_destroy(fold);
 
     rut_object_free(rut_fold_t, fold);
 }
@@ -136,7 +136,7 @@ rut_fold_new(rut_shell_t *shell, const char *label)
 
     rut_graphable_init(fold);
 
-    rut_introspectable_init(fold, _rut_fold_prop_specs, fold->properties);
+    rig_introspectable_init(fold, _rut_fold_prop_specs, fold->properties);
 
     fold->vbox = rut_box_layout_new(shell,
                                     RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);

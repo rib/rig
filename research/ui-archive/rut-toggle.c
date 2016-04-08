@@ -36,7 +36,7 @@
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-input-region.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-camera.h"
 #include "rut-texture-cache.h"
 #include "rut-util.h"
@@ -101,7 +101,7 @@ struct _rut_toggle_t {
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_TOGGLE_N_PROPS];
 };
 
@@ -151,7 +151,7 @@ _rut_toggle_free(void *object)
     cg_object_unref(toggle->pipeline_border);
     cg_object_unref(toggle->pipeline_box);
 
-    rut_introspectable_destroy(toggle);
+    rig_introspectable_destroy(toggle);
     rut_graphable_destroy(toggle);
 
     rut_object_free(rut_toggle_t, object);
@@ -508,7 +508,7 @@ rut_toggle_new_with_icons(rut_shell_t *shell,
     rut_graphable_init(toggle);
     rut_paintable_init(toggle);
 
-    rut_introspectable_init(toggle, _rut_toggle_prop_specs, toggle->properties);
+    rig_introspectable_init(toggle, _rut_toggle_prop_specs, toggle->properties);
 
     toggle->shell = shell;
 

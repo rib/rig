@@ -367,7 +367,7 @@ _rig_pointalism_grid_free(void *object)
 
     free_meshes(grid);
 
-    rut_introspectable_destroy(grid);
+    rig_introspectable_destroy(grid);
 
     rut_object_free(rig_pointalism_grid_t, grid);
 }
@@ -384,7 +384,7 @@ _rig_pointalism_grid_copy(rut_object_t *object)
     rig_pointalism_grid_set_image_size(copy, grid->tex_width, grid->tex_height);
 
     prop_ctx = rig_component_props_get_property_context(&grid->component);
-    rut_introspectable_copy_properties(prop_ctx, grid, copy);
+    rig_introspectable_copy_properties(prop_ctx, grid, copy);
 
     return copy;
 }
@@ -464,7 +464,7 @@ rig_pointalism_grid_new(rig_engine_t *engine, float size)
     grid->tex_width = 640;
     grid->tex_height = 480;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         grid, _rig_pointalism_grid_prop_specs, grid->properties);
 
     return grid;

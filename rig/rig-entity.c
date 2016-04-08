@@ -261,7 +261,7 @@ rig_entity_new(rig_engine_t *engine)
 
     entity->engine = engine;
 
-    rut_introspectable_init(entity, _rig_entity_prop_specs, entity->properties);
+    rig_introspectable_init(entity, _rig_entity_prop_specs, entity->properties);
 
     entity->position[0] = 0.0f;
     entity->position[1] = 0.0f;

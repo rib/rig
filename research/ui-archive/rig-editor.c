@@ -2872,7 +2872,7 @@ create_inspector(rig_editor_t *editor, c_llist_t *objects)
         controlled_data.editor = editor;
         controlled_data.inspector = inspector;
 
-        rut_introspectable_foreach_property(reference_object,
+        rig_introspectable_foreach_property(reference_object,
                                             init_property_controlled_state_cb,
                                             &controlled_data);
     }
@@ -3083,7 +3083,7 @@ rig_reload_position_inspector(rig_editor_t *editor, rig_entity_t *entity)
 {
     if (editor->inspector) {
         rig_property_t *property =
-            rut_introspectable_lookup_property(entity, "position");
+            rig_introspectable_lookup_property(entity, "position");
 
         rig_inspector_reload_property(editor->inspector, property);
     }

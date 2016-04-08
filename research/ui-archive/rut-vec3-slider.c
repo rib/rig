@@ -61,7 +61,7 @@ struct _rut_vec3_slider_t {
     bool in_set_value;
     float value[3];
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_VEC3_SLIDER_N_PROPS];
 };
 
@@ -81,7 +81,7 @@ _rut_vec3_slider_free(void *object)
 {
     rut_vec3_slider_t *slider = object;
 
-    rut_introspectable_destroy(slider);
+    rig_introspectable_destroy(slider);
     rut_graphable_destroy(slider);
 
     rut_object_free(rut_vec3_slider_t, slider);
@@ -154,7 +154,7 @@ rut_vec3_slider_new(rut_shell_t *shell)
 
     rut_graphable_init(slider);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         slider, _rut_vec3_slider_prop_specs, slider->properties);
 
     slider->hbox =
@@ -175,7 +175,7 @@ rut_vec3_slider_new(rut_shell_t *shell)
             rut_object_unref(text);
         }
 
-        slider->components[i].property = rut_introspectable_lookup_property(
+        slider->components[i].property = rig_introspectable_lookup_property(
             slider->components[i].slider, "value");
     }
 

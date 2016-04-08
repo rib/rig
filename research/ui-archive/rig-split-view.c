@@ -67,7 +67,7 @@ struct _rig_split_view_t {
     rut_object_t *child0;
     rut_object_t *child1;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_SPLIT_VIEW_N_PROPS];
 };
 
@@ -96,7 +96,7 @@ _rig_split_view_free(void *object)
     rut_graphable_remove_child(split_view->child1_transform);
     rut_object_unref(split_view->child1_transform);
 
-    rut_introspectable_destroy(split_view);
+    rig_introspectable_destroy(split_view);
     rut_graphable_destroy(split_view);
 
     rut_object_free(rig_split_view_t, split_view);
@@ -371,7 +371,7 @@ rig_split_view_new(rig_engine_t *engine,
     rig_split_view_t *split_view = rut_object_alloc0(
         rig_split_view_t, &rig_split_view_type, _rig_split_view_init_type);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         split_view, _rig_split_view_prop_specs, split_view->properties);
 
     rut_graphable_init(split_view);

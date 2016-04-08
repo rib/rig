@@ -36,7 +36,7 @@
 #include "rut-icon-toggle.h"
 #include "rut-icon-toggle-set.h"
 #include "rut-composite-sizable.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 typedef struct _rut_icon_toggle_set_state_t {
     c_list_t list_node;
@@ -66,7 +66,7 @@ struct _rut_icon_toggle_set_t {
 
     rut_graphable_props_t graphable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_ICON_TOGGLE_SET_N_PROPS];
 };
 
@@ -94,7 +94,7 @@ _rut_icon_toggle_set_free(void *object)
         remove_toggle_state(toggle_state);
     }
 
-    rut_introspectable_destroy(toggle_set);
+    rig_introspectable_destroy(toggle_set);
 
     rut_object_free(rut_icon_toggle_set_t, object);
 }
@@ -165,7 +165,7 @@ rut_icon_toggle_set_new(rut_shell_t *shell,
 
     rut_graphable_init(toggle_set);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         toggle_set, _rut_icon_toggle_set_prop_specs, toggle_set->properties);
 
     toggle_set->shell = shell;

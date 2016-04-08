@@ -37,7 +37,7 @@
 #include "rut-scroll-bar.h"
 #include "rut-color.h"
 #include "rut-input-region.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 
 #define THICKNESS 20
 #define HANDLE_THICKNESS 15
@@ -81,7 +81,7 @@ struct _rut_scroll_bar_t {
     float grab_y;
     float grab_offset;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_SCROLL_BAR_N_PROPS];
 };
 
@@ -342,7 +342,7 @@ rut_scroll_bar_new(rut_shell_t *shell,
     rut_scroll_bar_t *scroll_bar = rut_object_alloc0(
         rut_scroll_bar_t, &rut_scroll_bar_type, _rut_scroll_bar_init_type);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         scroll_bar, _rut_scroll_bar_prop_specs, scroll_bar->properties);
 
     scroll_bar->shell = shell;

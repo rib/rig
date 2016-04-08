@@ -85,7 +85,7 @@ struct _rig_camera_t {
 
     struct camera_properties props;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_CAMERA_N_PROPS];
 
     unsigned int in_frame : 1;
@@ -1031,7 +1031,7 @@ _rig_camera_free(void *object)
         rig_camera_remove_input_region(camera,
                                        camera->props.base.input_regions->data);
 
-    rut_introspectable_destroy(camera);
+    rig_introspectable_destroy(camera);
 
     rut_object_free(rig_camera_t, object);
 }
@@ -1229,7 +1229,7 @@ rig_camera_new(rig_engine_t *engine,
     rig_camera_t *camera = rut_object_alloc0(
         rig_camera_t, &rig_camera_type, _rig_camera_init_type);
 
-    rut_introspectable_init(camera, _rig_camera_prop_specs, camera->properties);
+    rig_introspectable_init(camera, _rig_camera_prop_specs, camera->properties);
 
     camera->component.type = RUT_COMPONENT_TYPE_CAMERA;
     camera->component.parented = false;

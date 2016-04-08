@@ -56,7 +56,7 @@ struct _rig_timeline_t {
     bool running;
     double elapsed;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_TIMELINE_N_PROPS];
 };
 
@@ -102,7 +102,7 @@ _rig_timeline_free(void *object)
         c_sllist_remove(timeline->engine->timelines, timeline);
     rut_object_unref(timeline->engine);
 
-    rut_introspectable_destroy(timeline);
+    rig_introspectable_destroy(timeline);
 
     rut_object_free(rig_timeline_t, timeline);
 }
@@ -137,7 +137,7 @@ rig_timeline_new(rig_engine_t *engine, float length)
 
     timeline->elapsed = 0;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         timeline, _rig_timeline_prop_specs, timeline->properties);
 
     timeline->engine = rut_object_ref(engine);

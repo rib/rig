@@ -25,7 +25,7 @@
 
 #include "rut-shell.h"
 #include "rig-property.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-text-buffer.h"
 
 #include <string.h>
@@ -56,7 +56,7 @@ struct _rut_text_buffer_t {
     c_list_t insert_text_cb_list;
     c_list_t delete_text_cb_list;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[N_PROPS];
 };
 
@@ -281,7 +281,7 @@ _rut_text_buffer_free(void *object)
         c_free(buffer->simple_text);
     }
 
-    rut_introspectable_destroy(buffer);
+    rig_introspectable_destroy(buffer);
 
     rut_object_unref(buffer->shell);
 
@@ -324,7 +324,7 @@ rut_text_buffer_new(rut_shell_t *shell)
     buffer->simple_text_bytes = 0;
     buffer->simple_text_size = 0;
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         buffer, _rut_text_buffer_prop_specs, buffer->properties);
 
     return buffer;

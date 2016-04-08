@@ -111,7 +111,7 @@ _rig_engine_free(void *object)
 
     rut_magazine_free(engine->object_id_magazine);
 
-    rut_introspectable_destroy(engine);
+    rig_introspectable_destroy(engine);
 
     rut_object_free(rig_engine_t, engine);
 }
@@ -151,7 +151,7 @@ _rig_engine_new_full(rut_shell_t *shell,
 
     c_matrix_init_identity(&engine->identity);
 
-    rut_introspectable_init(engine, _rig_engine_prop_specs, engine->properties);
+    rig_introspectable_init(engine, _rig_engine_prop_specs, engine->properties);
 
     engine->object_id_magazine = rut_magazine_new(sizeof(uint64_t), 1000);
 

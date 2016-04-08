@@ -86,7 +86,7 @@ struct _rut_drop_down_t {
 
     rut_input_region_t *input_region;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_DROP_DOWN_N_PROPS];
 
     /* This is set to true whenever the primary mouse button is clicked
@@ -287,7 +287,7 @@ _rut_drop_down_free(void *object)
     rut_graphable_remove_child(drop->input_region);
     rut_object_unref(drop->input_region);
 
-    rut_introspectable_destroy(drop);
+    rig_introspectable_destroy(drop);
 
     rut_shell_remove_pre_paint_callback_by_graphable(drop->shell,
                                                      drop);
@@ -887,7 +887,7 @@ rut_drop_down_new(rut_shell_t *shell)
     rut_paintable_init(drop);
     rut_graphable_init(drop);
 
-    rut_introspectable_init(drop, _rut_drop_down_prop_specs, drop->properties);
+    rig_introspectable_init(drop, _rut_drop_down_prop_specs, drop->properties);
 
     drop->bg_pipeline = rut_drop_down_create_bg_pipeline(shell);
     drop->highlighted_bg_pipeline =

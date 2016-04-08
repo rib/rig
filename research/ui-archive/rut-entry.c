@@ -63,7 +63,7 @@ struct _rut_entry_t {
     float width;
     float height;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_ENTRY_N_PROPS];
 };
 
@@ -104,7 +104,7 @@ _rut_entry_free(void *object)
 
     remove_icon(entry);
 
-    rut_introspectable_destroy(entry);
+    rig_introspectable_destroy(entry);
 
     rut_graphable_remove_child(entry->text);
     rut_object_unref(entry->text);
@@ -315,7 +315,7 @@ rut_entry_new(rut_shell_t *shell)
 
     entry->shell = rut_object_ref(shell);
 
-    rut_introspectable_init(entry, _rut_entry_prop_specs, entry->properties);
+    rig_introspectable_init(entry, _rut_entry_prop_specs, entry->properties);
 
     rut_graphable_init(entry);
 

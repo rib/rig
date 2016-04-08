@@ -38,7 +38,7 @@
 #include "rig-property.h"
 #include "rut-input-region.h"
 #include "rut-color-picker.h"
-#include "rut-introspectable.h"
+#include "rig-introspectable.h"
 #include "rut-camera.h"
 #include "rut-texture-cache.h"
 
@@ -61,7 +61,7 @@ struct _rut_color_picker_t {
     rut_graphable_props_t graphable;
     rut_paintable_props_t paintable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RUT_COLOR_PICKER_N_PROPS];
 
     bool hs_pipeline_dirty;
@@ -143,7 +143,7 @@ _rut_color_picker_free(void *object)
 
     rut_object_unref(picker->shell);
 
-    rut_introspectable_destroy(picker);
+    rig_introspectable_destroy(picker);
     rut_graphable_destroy(picker);
 
     rut_object_free(rut_color_picker_t, picker);
@@ -791,7 +791,7 @@ rut_color_picker_new(rut_shell_t *shell)
     rut_paintable_init(picker);
     rut_graphable_init(picker);
 
-    rut_introspectable_init(
+    rig_introspectable_init(
         picker, _rut_color_picker_prop_specs, picker->properties);
 
     picker->input_region =

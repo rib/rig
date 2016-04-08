@@ -48,7 +48,7 @@ struct _rig_light_t {
     cg_color_t diffuse;
     cg_color_t specular;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_LIGHT_N_PROPS];
 };
 

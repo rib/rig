@@ -60,7 +60,7 @@ struct _rig_asset_inspector_t {
 
     rut_graphable_props_t graphable;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_ASSET_INSPECTOR_N_PROPS];
 
     unsigned int selected : 1;
@@ -107,7 +107,7 @@ _rig_asset_inspector_free(void *object)
 
     rut_graphable_destroy(asset_inspector);
 
-    rut_introspectable_destroy(asset_inspector);
+    rig_introspectable_destroy(asset_inspector);
 
     rut_object_free(rig_asset_inspector_t, asset_inspector);
 }
@@ -289,7 +289,7 @@ rig_asset_inspector_new(rut_shell_t *shell,
 
     asset_inspector->shell = shell;
 
-    rut_introspectable_init(asset_inspector,
+    rig_introspectable_init(asset_inspector,
                             _rig_asset_inspector_prop_specs,
                             asset_inspector->properties);
 

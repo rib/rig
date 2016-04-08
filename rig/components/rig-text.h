@@ -65,7 +65,7 @@ struct _rig_text_t {
     rig_text_engine_t *text_engine;
     rut_mesh_t *pick_mesh;
 
-    rut_introspectable_props_t introspectable;
+    rig_introspectable_props_t introspectable;
     rig_property_t properties[RIG_TEXT_N_PROPS];
 };
 
