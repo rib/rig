@@ -26,12 +26,13 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_ENGINE_OP_H_
-#define _RIG_ENGINE_OP_H_
+#pragma once
 
 #include "rig-ui.h"
 #include "rig.pb-c.h"
 #include "rig-pb.h"
+
+#include "components/rig-mesh.h"
 
 typedef enum _rig_engine_op_type_t {
     // RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
@@ -52,6 +53,10 @@ typedef enum _rig_engine_op_type_t {
     RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
     RIG_ENGINE_OP_TYPE_ADD_VIEW,
     RIG_ENGINE_OP_TYPE_DELETE_VIEW,
+    RIG_ENGINE_OP_TYPE_ADD_BUFFER,
+    RIG_ENGINE_OP_TYPE_DELETE_BUFFER,
+    RIG_ENGINE_OP_TYPE_BUFFER_SET_DATA,
+    RIG_ENGINE_OP_TYPE_MESH_SET_ATTRIBUTES,
 } rig_engine_op_type_t;
 
 #if 0
@@ -129,6 +134,24 @@ void
 rig_engine_op_delete_view(rig_engine_t *engine,
                           rig_view_t *view);
 
+void
+rig_engine_op_add_buffer(rig_engine_t *engine,
+                         rut_buffer_t *buffer);
+void
+rig_engine_op_delete_buffer(rig_engine_t *engine,
+                            rut_buffer_t *buffer);
+void
+rig_engine_op_buffer_set_data(rig_engine_t *engine,
+                              rut_buffer_t *buffer,
+                              int offset,
+                              uint8_t *data,
+                              int data_len);
+void
+rig_engine_op_mesh_set_attributes(rig_engine_t *engine,
+                                  rig_mesh_t *mesh,
+                                  rut_attribute_t **attributes,
+                                  int n_attributes);
+
 Rig__Operation **rig_engine_serialize_ops(rig_engine_t *engine,
                                           rig_pb_serializer_t *serializer);
 
@@ -147,8 +170,7 @@ void rig_engine_op_apply_context_init(
     rig_engine_op_apply_context_t *ctx,
     rig_engine_t *engine,
     void (*register_id_cb)(void *object, uint64_t id, void *user_data),
-    void (*unregister_id_cb)(uint64_t id, void *user_data),
-    void *(*id_to_object_cb)(uint64_t id, void *user_data),
+    void *(*object_lookup_cb)(uint64_t id, void *user_data),
     void *user_data);
 
 void rig_engine_op_apply_context_destroy(rig_engine_op_apply_context_t *ctx);
@@ -199,5 +221,3 @@ bool rig_engine_pb_op_map(rig_engine_op_map_context_t *ctx,
 bool rig_engine_map_pb_ui_edit(rig_engine_op_map_context_t *map_ctx,
                                rig_engine_op_apply_context_t *apply_ctx,
                                Rig__UIEdit *pb_ui_edit);
-
-#endif /* _RIG_ENGINE_OP_H_ */

@@ -125,8 +125,7 @@ struct _rig_simulator_t {
     rig_engine_op_map_context_t map_to_sim_objects_op_ctx;
     rig_engine_op_map_context_t map_to_frontend_ids_op_ctx;
 
-    c_hash_table_t *id_to_object_map;
-    c_hash_table_t *object_to_id_map;
+    c_hash_table_t *object_registry;
 
     void *(*lookup_object_cb)(uint64_t id, void *user_data);
     uint64_t (*lookup_object_id)(rig_simulator_t *simulator, void *object);

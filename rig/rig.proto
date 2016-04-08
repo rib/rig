@@ -29,8 +29,10 @@ message Device
 message Buffer
 {
   optional sint64 id=1;
-  optional bytes data=2;
+  required int32 size=2;
+  optional bytes data=3;
 }
+
 message Attribute
 {
   enum Type { BYTE=1; UNSIGNED_BYTE=2; SHORT=3; UNSIGNED_SHORT=4; FLOAT=5; }
@@ -56,13 +58,10 @@ message Mesh
 {
   enum Mode { POINTS=1; LINES=2; LINE_LOOP=3; LINE_STRIP=4; TRIANGLES=5; TRIANGLE_STRIP=6; TRIANGLE_FAN=7; }
 
+  optional int64 id=8;
+
   optional Mode mode=1;
 
-  //NB: buffers can be shared between attributes so attributes only
-  //refer To a buffer by an ID and the actual buffers are here.
-  //
-  //TODO: To support sharing buffers between meshes we should also add
-  //an array of buffers to the UI message.
   repeated Buffer buffers=2;
 
   repeated Attribute attributes=3;
@@ -204,7 +203,7 @@ message Entity
 {
   message Component
     {
-      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5;
+      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MESH=5;
           TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10;
           BUTTON_INPUT=11; NATIVE_MODULE=12; SOURCE=13; }
 
@@ -304,6 +303,8 @@ message UI
   repeated SimpleObject views=8;
 
   repeated Controller controllers=4;
+
+  repeated Buffer buffers=9;
 
   optional bytes dso=6;
 }
@@ -484,7 +485,34 @@ message Operation
   }
   optional DeleteView delete_view=19;
 
-  //XXX: next id = 21
+  message AddBuffer
+  {
+    required Buffer buffer=1;
+  }
+  optional AddBuffer add_buffer=21;
+
+  message DeleteBuffer
+  {
+    required sint64 buffer_id=1; //XXX ID
+  }
+  optional DeleteBuffer delete_buffer=22;
+
+  message BufferSetData
+  {
+    required sint64 buffer_id=1; //XXX ID
+    required int32 offset=2;
+    required bytes data=3;
+  }
+  optional BufferSetData buffer_set_data=23;
+
+  message MeshSetAttributes
+  {
+    required sint64 mesh_id=1; //XXX ID
+    repeated Attribute attributes=2;
+  }
+  optional MeshSetAttributes mesh_set_attributes=24;
+
+  //XXX: next id = 25
 }
 
 message UIEdit

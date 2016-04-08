@@ -29,6 +29,7 @@
 #ifndef _RIG_C_
 #define _RIG_C_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct _RModule RModule;
@@ -220,6 +221,9 @@ RObject *r_button_input_new(RModule *module);
 RObject *r_text_new(RModule *module);
 
 void r_add_component(RModule *module, RObject *entity, RObject *component);
+
+void r_set_integer_by_name(RModule *module, RObject *object, const char *name, int value);
+void r_set_integer(RModule *module, RObject *object, int id, int value);
 
 void r_set_float_by_name(RModule *module, RObject *object, const char *name, float value);
 void r_set_float(RModule *module, RObject *object, int id, float value);

@@ -91,6 +91,7 @@ struct _rig_ui_t {
     c_llist_t *lights;
     c_llist_t *controllers;
     c_llist_t *views;
+    c_llist_t *buffers;
 
     bool dirty_view_geometry;
 
@@ -174,3 +175,8 @@ void rig_ui_add_view(rig_ui_t *ui, rig_view_t *view);
 void rig_ui_remove_view(rig_ui_t *ui, rig_view_t *view);
 
 rig_view_t *rig_ui_find_view_for_onscreen(rig_ui_t *ui, rut_shell_onscreen_t *onscreen);
+
+void rig_ui_add_buffer(rig_ui_t *ui, rut_buffer_t *buffer);
+void rig_ui_remove_buffer(rig_ui_t *ui, rut_buffer_t *buffer);
+void rig_ui_reap_buffer(rig_ui_t *ui, rut_buffer_t *buffer);
+

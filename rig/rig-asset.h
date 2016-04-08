@@ -104,7 +104,7 @@ void rig_asset_get_image_size(rig_asset_t *asset, int *width, int *height);
 
 #ifdef RIG_EDITOR_ENABLED
 bool rig_file_is_asset(const char *filename, const char *mime_type);
-rig_asset_t *rig_asset_new_builtin(rut_shell_t *shell, const char *icon_path);
+rig_asset_t *rig_asset_new_builtin(rig_engine_t *engine, const char *icon_path);
 rig_asset_t *rig_asset_new_from_file(rig_engine_t *engine,
                                      const char *filename,
                                      const char *mime_type,
