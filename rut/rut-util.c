@@ -339,6 +339,8 @@ rut_util_intersect_mesh(rut_mesh_t *mesh,
     state.found = false;
     state.index = 0;
 
+    c_warn_if_fail(mesh->n_vertices < 10000);
+
     rut_mesh_foreach_triangle(
         mesh, intersect_triangle_cb, &state, "cg_position_in", NULL);
 
