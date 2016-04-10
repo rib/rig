@@ -235,13 +235,14 @@
           'rule_name': 'ragel',
 	  'extension': 'rl',
 	  'outputs': [ '<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).hh' ],
-          'action': [ 'ragel', '-e', '-F1', '-o', '<@(_outputs)', '<@(RULE_INPUT_PATH)' ]
+          'action': [ 'ragel', '-e', '-F1', '-o', '<@(_outputs)', '<(RULE_INPUT_PATH)' ]
         }
       ],
     },
     {
       'target_name': 'fc-glyphname',
       'type': 'executable',
+      'toolsets': [ 'host' ],
       'include_dirs': [
         'fontconfig',
         'fontconfig/src'
@@ -258,6 +259,7 @@
     {
       'target_name': 'fc-case',
       'type': 'executable',
+      'toolsets': [ 'host' ],
       'include_dirs': [
         'fontconfig',
         'fontconfig/src'
@@ -274,6 +276,7 @@
     {
       'target_name': 'fc-case-gen',
       'type': 'none',
+      'toolsets': [ 'host', 'target' ],
       'dependencies': [ 'fc-case#host' ],
       'sources': [ 'fontconfig/fc-case/fccase.h' ],
       'actions': [
@@ -291,6 +294,7 @@
       'target_name': 'fc-lang',
       'dependencies': [ 'fc-case-gen' ],
       'type': 'executable',
+      'toolsets': [ 'host' ],
       'include_dirs': [
         'fontconfig',
         'fontconfig/src'
@@ -697,7 +701,6 @@
       'target_name': 'xdgmime',
       'type': 'static_library',
       'dependencies': [
-         'libuv/uv.gyp:libuv',
          'clib/clib.gyp:clib',
        ],
       'include_dirs': [
@@ -721,6 +724,14 @@
         'xdgmime/xdgmime.c',
         'xdgmime/xdgmime.h',
       ],
+
+      'conditions': [
+        [ 'is_nodejs_build!=1', {
+          'dependencies': [
+            'libuv/uv.gyp:libuv'
+          ],
+        }]
+      ]
     },
     {
       'target_name': 'rig',
@@ -986,10 +997,12 @@
           # ships with Xcode emits waaaay too many false positives.
           'cflags': [ '-Wstrict-aliasing' ],
         }],
-        [ 'enable_uv==1', {
+        [ 'enable_uv==1 and is_nodejs_build!=1', {
           'dependencies': [
             'libuv/uv.gyp:libuv'
           ],
+        }],
+        [ 'enable_uv==1', {
           'defines': [ 'USE_UV=1' ],
           'sources': [
             'rig/components/rig-native-module.h',

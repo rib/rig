@@ -12,7 +12,6 @@
       'target_name': 'libh2o',
       'type': 'static_library',
       'dependencies': [
-          '../libuv/uv.gyp:libuv',
           '../wslay/wslay.gyp:libwslay'
        ],
       'include_dirs': [
@@ -144,6 +143,16 @@
             }],
           ],
         }],
+        [ 'enable_uv==1 and is_nodejs_build!=1', {
+          'dependencies': [
+            '../libuv/uv.gyp:libuv'
+          ],
+        }],
+        [ 'enable_uv==1', {
+          'defines': [
+            'H2O_USE_LIBUV=1'
+          ],
+        }]
       ]
     }
   ]
