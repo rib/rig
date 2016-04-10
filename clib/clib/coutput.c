@@ -203,6 +203,14 @@ c_logv(c_log_context_t *lctx,
 {
     char *msg;
 
+#ifndef C_DEBUG
+    if (log_level & (C_LOG_LEVEL_MESSAGE |
+                     C_LOG_LEVEL_INFO |
+                     C_LOG_LEVEL_WARNING |
+                     C_LOG_LEVEL_DEBUG))
+        return;
+#endif
+
     if (vasprintf(&msg, format, args) < 0)
         return;
 
