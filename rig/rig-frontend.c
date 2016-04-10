@@ -1386,9 +1386,13 @@ compare_presentation_deltas_cb(const void *v0, const void *v1)
 static int
 round_to_nearest_30(int fps)
 {
-    int rem = (fps + 15) % 30;
+    if (fps < 30)
+        return fps;
+    else {
+        int rem = (fps + 15) % 30;
 
-    return fps + 15 - rem;
+        return fps + 15 - rem;
+    }
 }
 
 static void
@@ -1480,9 +1484,6 @@ rig_frontend_start_frame(rig_frontend_t *frontend)
 
                 median = deltas[mid];
 
-                for (int i = 0; i < n_deltas; i++) {
-                    c_debug("delta %d = %"PRIi64, i, deltas[mid]);
-                }
                 current_fps = 1000000000.0 / (double)median;
 
                 refresh_rate = round_to_nearest_30(current_fps);
