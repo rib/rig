@@ -792,7 +792,9 @@ rig_simulator_run_frame(rut_shell_t *shell, void *user_data)
 
     rut_shell_dispatch_input_events(shell);
 
-    rig_ui_code_modules_update(engine->ui);
+    rig_ui_code_modules_update(engine->ui, &(rig_code_module_update_t) {
+                                    .progress = simulator->frame_info.progress
+                               });
 
 #if 0
     static int counter = 0;

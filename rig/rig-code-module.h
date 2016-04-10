@@ -26,12 +26,15 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_CODE_MODULE_H_
-#define _RIG_CODE_MODULE_H_
+#pragma once
 
 #include <clib.h>
 
 #include <rut.h>
+
+typedef struct {
+    double progress;
+} rig_code_module_update_t;
 
 #include "rig-engine.h"
 
@@ -50,8 +53,6 @@ typedef struct _rig_code_module_props {
 
 typedef struct _rig_code_module_vtable {
     void (*load)(rut_object_t *object);
-    void (*update)(rut_object_t *object);
+    void (*update)(rut_object_t *object, rig_code_module_update_t *state);
     void (*input)(rut_object_t *object, rut_input_event_t *event);
 } rig_code_module_vtable_t;
-
-#endif /* _RIG_CODE_MODULE_H_ */

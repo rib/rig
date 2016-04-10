@@ -470,7 +470,7 @@ rig_ui_code_modules_load(rig_ui_t *ui)
 }
 
 void
-rig_ui_code_modules_update(rig_ui_t *ui)
+rig_ui_code_modules_update(rig_ui_t *ui, rig_code_module_update_t *state)
 {
     rig_code_module_props_t *module;
 
@@ -479,7 +479,7 @@ rig_ui_code_modules_update(rig_ui_t *ui)
             rut_object_get_vtable(module->object, rig_code_module_trait_id);
 
         if (vtable->update)
-            vtable->update(module->object);
+            vtable->update(module->object, state);
     }
 }
 
