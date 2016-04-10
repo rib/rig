@@ -101,10 +101,12 @@
         '_C_COMPILATION',
       ],
       'conditions': [
-        [ 'enable_uv==1', {
+        [ 'enable_uv==1 and is_nodejs_build!=1', {
           'dependencies': [
             '../libuv/uv.gyp:libuv'
           ],
+        }],
+        [ 'enable_uv==1', {
           'defines': [
             'USE_UV=1'
           ],

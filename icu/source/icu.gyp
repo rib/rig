@@ -63,6 +63,7 @@
     {
       'target_name': 'icuuc',
       'type': '<(library)',
+      'toolsets': [ 'host', 'target' ],
       'dependencies': [
        ],
       'include_dirs': [
@@ -298,6 +299,7 @@
     {
       'target_name': 'icui18n',
       'type': '<(library)',
+      'toolsets': [ 'host', 'target' ],
       'dependencies': [
        ],
       'include_dirs': [
@@ -725,6 +727,7 @@
     {
       'target_name': 'icudata',
       'type': '<(library)',
+      'toolsets': [ 'host', 'target' ],
       'dependencies': [
        ],
       'include_dirs': [
@@ -761,6 +764,7 @@
     {
       'target_name': 'icuio',
       'type': '<(library)',
+      'toolsets': [ 'host' ],
       'dependencies': [
        ],
       'include_dirs': [
@@ -847,6 +851,7 @@
     {
       'target_name': 'tool_utils',
       'type': 'static_library',
+      'toolsets': [ 'host' ],
       'dependencies': [
        ],
       'include_dirs': [
@@ -855,7 +860,6 @@
 	'i18n',
 	'tools/toolutil',
       ],
-      'toolsets': [ 'host' ],
       'direct_dependent_settings': {
         'include_dirs': [
 	  'tools/toolutil',
