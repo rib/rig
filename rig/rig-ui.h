@@ -40,6 +40,7 @@ typedef struct _rig_view rig_view_t;
 #include "rig-entity.h"
 #include "rig-controller.h"
 #include "rig-camera-view.h"
+#include "rig-code-module.h"
 
 typedef struct _rig_ui_grab rig_ui_grab_t;
 
@@ -144,7 +145,7 @@ void rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
 void rig_ui_register_all_entity_components(rig_ui_t *ui, rig_entity_t *entity);
 
 void rig_ui_code_modules_load(rig_ui_t *ui);
-void rig_ui_code_modules_update(rig_ui_t *ui);
+void rig_ui_code_modules_update(rig_ui_t *ui, rig_code_module_update_t *state);
 void rig_ui_code_modules_handle_input(rig_ui_t *ui, rut_input_event_t *event);
 
 rut_input_event_status_t rig_ui_handle_input_event(rig_ui_t *ui,

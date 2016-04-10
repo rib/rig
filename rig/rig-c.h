@@ -74,6 +74,11 @@ typedef enum {
     R_INPUT_EVENT_STATUS_HANDLED,
 } RInputEventStatus;
 
+
+typedef struct {
+    double progress;
+} RUpdateState;
+
 RInputEventType r_input_event_get_type(RInputEvent *event);
 
 RKeyEventAction r_key_event_get_action(RInputEvent *event);

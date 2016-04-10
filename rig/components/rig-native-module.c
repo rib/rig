@@ -61,7 +61,7 @@ struct _rig_native_module_t {
 
     struct {
         void (*load)(RModule *module);
-        void (*update)(RModule *module);
+        void (*update)(RModule *module, RUpdateState *state);
         void (*input)(RModule *module, RInputEvent *event);
     } symbols;
 
@@ -209,15 +209,18 @@ ensure_module_loaded(rig_native_module_t *module)
 }
 
 static void
-_rig_native_module_update(rut_object_t *object)
+_rig_native_module_update(rut_object_t *object, rig_code_module_update_t *state)
 {
     rig_native_module_t *module = object;
+    RUpdateState update_state = {
+        .progress = state->progress
+    };
 
     if (!ensure_module_loaded(module))
         return;
 
     if (module->symbols.update)
-        module->symbols.update((RModule *)&module->code_module);
+        module->symbols.update((RModule *)&module->code_module, &update_state);
 }
 
 static void
