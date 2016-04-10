@@ -1531,6 +1531,8 @@ rig_source_attach_frame(rig_source_t *source,
                                       source->first_layer,
                                       source->texture);
 
+        cg_object_unref(tex); /* ref taken by pipeline */
+
         av_frame_free(&frame);
 
         break;
