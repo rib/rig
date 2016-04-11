@@ -64,7 +64,8 @@ static void
 _rut_attribute_free(rut_object_t *object)
 {
     rut_attribute_t *attribute = object;
-    rut_object_unref(attribute->buffered.buffer);
+    if (attribute->is_buffered)
+        rut_object_unref(attribute->buffered.buffer);
     rut_object_free(rut_attribute_t, attribute);
 }
 
