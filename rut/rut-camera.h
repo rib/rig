@@ -86,6 +86,7 @@ typedef struct _rut_camera_vtable_t {
 
     void (*set_background_color)(rut_object_t *camera, const cg_color_t *color);
 
+    bool (*get_clear)(rut_object_t *camera);
     void (*set_clear)(rut_object_t *camera, bool clear);
 
     void (*set_framebuffer)(rut_object_t *camera,
@@ -179,6 +180,7 @@ void rut_camera_set_background_color(rut_object_t *camera,
 
 const cg_color_t *rut_camera_get_background_color(rut_object_t *camera);
 
+bool rut_camera_get_clear(rut_object_t *object);
 void rut_camera_set_clear(rut_object_t *camera, bool clear);
 
 cg_framebuffer_t *rut_camera_get_framebuffer(rut_object_t *camera);

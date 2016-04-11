@@ -156,6 +156,14 @@ rig_camera_get_background_color(rut_object_t *obj)
     return &camera->props.base.bg_color;
 }
 
+bool
+rig_camera_get_clear(rut_object_t *object)
+{
+    rig_camera_t *camera = object;
+
+    return camera->props.base.clear_fb;
+}
+
 void
 rig_camera_set_clear(rut_object_t *object, bool clear)
 {
@@ -1169,6 +1177,7 @@ _rig_camera_init_type(void)
         .get_shell = rig_camera_get_shell,
         .set_background_color4f = rig_camera_set_background_color4f,
         .set_background_color = rig_camera_set_background_color,
+        .get_clear = rig_camera_get_clear,
         .set_clear = rig_camera_set_clear,
         .set_framebuffer = rig_camera_set_framebuffer,
         .set_viewport = rig_camera_set_viewport,

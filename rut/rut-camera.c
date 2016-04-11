@@ -77,6 +77,15 @@ rut_camera_set_clear(rut_object_t *object, bool clear)
     vtable->set_clear(object, clear);
 }
 
+bool
+rut_camera_get_clear(rut_object_t *object)
+{
+    rut_camera_vtable_t *vtable =
+        rut_object_get_vtable(object, RUT_TRAIT_ID_CAMERA);
+
+    return vtable->get_clear(object);
+}
+
 cg_framebuffer_t *
 rut_camera_get_framebuffer(rut_object_t *object)
 {
