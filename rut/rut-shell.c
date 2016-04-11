@@ -819,7 +819,7 @@ static void
 onscreen_maybe_queue_redraw(rut_shell_onscreen_t *onscreen)
 {
     if (onscreen->is_dirty && onscreen->is_ready)
-        rut_shell_queue_redraw_real(onscreen->shell);
+        rut_shell_queue_redraw(onscreen->shell);
 }
 
 static void
