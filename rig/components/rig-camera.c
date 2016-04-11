@@ -761,16 +761,6 @@ rig_camera_flush(rut_object_t *object)
 {
     rig_camera_t *camera = object;
     _rig_camera_flush_transforms(camera);
-
-    if (camera->props.base.clear_fb) {
-        cg_framebuffer_clear4f(camera->props.base.fb,
-                               CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
-                               CG_BUFFER_BIT_STENCIL,
-                               camera->props.base.bg_color.red,
-                               camera->props.base.bg_color.green,
-                               camera->props.base.bg_color.blue,
-                               camera->props.base.bg_color.alpha);
-    }
 }
 
 void
