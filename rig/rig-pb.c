@@ -3313,9 +3313,6 @@ rig_pb_unserialize_rut_mesh(rig_pb_un_serializer_t *unserializer,
         rut_mesh_set_indices(mesh, indices_type, buffer, pb_mesh->n_indices);
     }
 
-    if (!rig_pb_unserializer_register_object(unserializer, mesh, pb_mesh->id))
-        goto ERROR;
-
     /* The mesh will take references on the attributes */
     for (int i = 0; i < n_attributes; i++)
         rut_object_unref(attributes[i]);
