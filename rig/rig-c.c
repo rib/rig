@@ -1111,8 +1111,6 @@ native_module_new(rig_engine_t *engine)
     component = rig_native_module_new(engine);
     prop_ctx->logging_disabled--;
 
-    rig_engine_op_register_component(engine, component);
-
     return component;
 }
 
