@@ -1282,7 +1282,7 @@ stub_engine_init_cb(rut_shell_t *shell, void *user_data)
 }
 
 r_engine_t *
-r_engine_new(void)
+r_engine_new(REngineConfig *config)
 {
     r_engine_t *stub_engine = rut_object_alloc0(
         r_engine_t, &r_engine_type, _r_engine_init_type);
@@ -1294,6 +1294,10 @@ r_engine_new(void)
     enum rig_simulator_run_mode simulator_mode =
         RIG_SIMULATOR_RUN_MODE_MAINLOOP;
 #endif
+
+    if (config->require_vr_hmd) {
+        /* TODO */
+    }
 
     stub_engine->simulator_mode = simulator_mode;
     //stub_engine->simulator_address = simulator_address ? strdup(simulator_address) : NULL;
