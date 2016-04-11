@@ -258,7 +258,11 @@ void r_set_object(RModule *module, RObject *object, int id, RObject *value);
 
 typedef struct _r_engine r_engine_t;
 
-r_engine_t *r_engine_new(void);
+typedef struct {
+    bool require_vr_hmd;
+} REngineConfig;
+
+r_engine_t *r_engine_new(REngineConfig *config);
 
 #define R_ABI_1         1
 #define R_ABI_LATEST    R_ABI_1
