@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RIG_CAMERA_VIEW_H_
-#define _RIG_CAMERA_VIEW_H_
+#pragma once
 
 #ifdef ENABLE_OCULUS_RIFT
 #include "OVR_CAPI.h"
@@ -44,6 +43,12 @@ typedef struct _rig_camera_view_t rig_camera_view_t;
 #include "rig-dof-effect.h"
 
 #include "components/rig-camera.h"
+
+enum render_mode {
+    RENDER_MODE_MONITOR,
+    RENDER_MODE_DUMMY_HMD,
+    RENDER_MODE_OVR_HMD,
+};
 
 typedef struct _entity_translate_grab_closure_t entity_translate_grab_closure_t;
 typedef struct _entities_translate_grab_closure_t
@@ -71,22 +76,22 @@ struct eye {
     rut_object_t *camera_component;
 
     cg_pipeline_t *distort_pipeline;
+
+    struct eye_frustum frustum;
+
+#ifdef ENABLE_OCULUS_RIFT
     int eye_to_source_uv_scale_loc;
     int eye_to_source_uv_offset_loc;
     int eye_rotation_start_loc;
     int eye_rotation_end_loc;
 
-#ifdef ENABLE_OCULUS_RIFT
-    //struct eye_frustum eye_frustum;
-    ovrFovPort fov;
-
-    ovrEyeRenderDesc render_desc;
-
-    ovrPosef head_pose;
-#endif /* ENABLE_OCULUS_RIFT */
-
     float eye_to_source_uv_scale[2];
     float eye_to_source_uv_offset[2];
+
+    ovrFovPort ovr_fov;
+    ovrEyeRenderDesc ovr_render_desc;
+    ovrPosef ovr_head_pose;
+#endif
 
     cg_attribute_buffer_t *attrib_buf;
     cg_attribute_t *attribs[6];
@@ -94,10 +99,6 @@ struct eye {
 
     cg_index_buffer_t *index_buf;
     cg_indices_t *indices;
-
-    //float x0, y0, x1, y1;
-
-    float viewport[4];
 };
 
 struct rig_hmd {
@@ -120,6 +121,8 @@ struct _rig_camera_view_t {
 
     rig_ui_t *ui;
 
+    enum render_mode render_mode;
+
     cg_framebuffer_t *fb;
 
     rut_graphable_props_t graphable;
@@ -130,7 +133,6 @@ struct _rig_camera_view_t {
     rig_entity_t *camera;
     rut_object_t *camera_component;
 
-    bool hmd_mode;
     struct rig_hmd hmd;
 
     cg_primitive_t *debug_triangle;
@@ -154,5 +156,3 @@ void rig_camera_view_set_camera_entity(rig_camera_view_t *view,
 
 void rig_camera_view_paint(rig_camera_view_t *view,
                            rut_object_t *renderer);
-
-#endif /* _RIG_CAMERA_VIEW_H_ */
