@@ -126,7 +126,6 @@ struct _rig_camera_view_t {
     cg_framebuffer_t *fb;
 
     rut_graphable_props_t graphable;
-    rut_paintable_props_t paintable;
 
     float width, height;
 

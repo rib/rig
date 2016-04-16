@@ -62,8 +62,6 @@ _rig_camera_view_free(void *object)
 
     rig_camera_view_set_ui(view, NULL);
 
-    rut_graphable_destroy(view);
-
     rut_object_free(rig_camera_view_t, view);
 }
 
@@ -458,20 +456,10 @@ static rut_type_t rig_camera_view_type;
 static void
 _rig_camera_view_init_type(void)
 {
-
-    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child removed */
-                                                       NULL, /* child addded */
-                                                       NULL /* parent changed */
-    };
-
     rut_type_t *type = &rig_camera_view_type;
 #define TYPE rig_camera_view_t
 
     rut_type_init(type, C_STRINGIFY(TYPE), _rig_camera_view_free);
-    rut_type_add_trait(type,
-                       RUT_TRAIT_ID_GRAPHABLE,
-                       offsetof(TYPE, graphable),
-                       &graphable_vtable);
 #undef TYPE
 }
 
@@ -960,10 +948,6 @@ rig_camera_view_new(rig_frontend_t *frontend)
     view->frontend = frontend;
     view->engine = frontend->engine;
     view->shell = view->engine->shell;
-
-    rut_graphable_init(view);
-
-    //rut_graphable_add_child(view, view->input_region);
 
     if (hmd_mode) {
 #ifdef ENABLE_OCULUS_RIFT
