@@ -100,3 +100,4 @@ rig_source_get_url(rut_object_t *obj);
 bool rig_source_get_running(rut_object_t *object);
 void rig_source_set_running(rut_object_t *object, bool running);
 
+void rig_source_prepare_for_frame(rut_object_t *object);
