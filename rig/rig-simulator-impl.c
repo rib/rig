@@ -346,21 +346,6 @@ simulator__run_frame(Rig__Simulator_Service *service,
     closure(&ack, closure_data);
 }
 
-static void
-simulator__synchronize(Rig__Simulator_Service *service,
-                       const Rig__Sync *sync,
-                       Rig__SyncAck_Closure closure,
-                       void *closure_data)
-{
-    Rig__SyncAck ack = RIG__SYNC_ACK__INIT;
-
-    /* XXX: currently we can assume that frames are processed
-     * synchronously and so there are implicitly no outstanding
-     * frames to process.
-     */
-    closure(&ack, closure_data);
-}
-
 static Rig__Simulator_Service rig_simulator_service =
     RIG__SIMULATOR__INIT(simulator__);
 
