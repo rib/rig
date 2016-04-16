@@ -168,7 +168,7 @@ void gif_create(gif_animation *gif, gif_bitmap_callback_vt *bitmap_callbacks) {
 		GIF_OK for successful decoding
 		GIF_WORKING for successful decoding if more frames are expected
 */
-gif_result gif_initialise(gif_animation *gif, size_t size, const unsigned char *data) {
+gif_result gif_initialise(gif_animation *gif, size_t size, unsigned char *data) {
 	unsigned char *gif_data;
 	unsigned int index;
 	gif_result return_value;
