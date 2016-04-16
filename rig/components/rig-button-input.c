@@ -299,8 +299,6 @@ _rig_button_input_grab_input_cb(rut_input_event_t *event,
     rig_button_input_t *button_input = state->button_input;
 
     if (rut_input_event_get_type(event) == RUT_INPUT_EVENT_TYPE_MOTION) {
-        rut_shell_t *shell =
-            rig_component_props_get_shell(&button_input->component);
         rig_engine_t *engine =
             rig_component_props_get_engine(&button_input->component);
 
