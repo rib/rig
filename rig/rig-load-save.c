@@ -47,8 +47,8 @@ typedef struct _buffered_file_t {
 
 static void
 append_to_file(ProtobufCBuffer *buffer,
-               unsigned len,
-               const unsigned char *engine)
+               size_t len,
+               const uint8_t *engine)
 {
     buffered_file_t *buffered_file = (buffered_file_t *)buffer;
 
@@ -68,7 +68,7 @@ rig_save(rig_engine_t *engine, rig_ui_t *ui, const char *path)
     Rig__UI *pb_ui;
     FILE *fp;
 
-    buffered_file_t buffered_file = { { append_to_file },
+    buffered_file_t buffered_file = { { .append = append_to_file },
                                       NULL, /* file pointer */
                                       false };
 
