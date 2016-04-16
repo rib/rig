@@ -135,9 +135,20 @@ struct _rig_source_t {
     int ff_video_stream;
     AVCodecContext *ff_video_codec_ctx;
     struct SwsContext *sws_ctx;
-    uint8_t *ff_dst_frame_buf;
-    size_t ff_dst_frame_buf_size;
-    AVFrame *ff_dst_frame;
+
+    /* double buffered state, swapped between decode thread
+     * and frontend... */
+    struct ff_buffered_state {
+        int width;
+        int height;
+        uint8_t *dst_frame_buf;
+        size_t dst_frame_buf_size;
+        AVFrame *dst_frame;
+    } ff_buffered_state[2];
+    int ff_decode_buf;
+
+    uv_work_t ff_decode_work;
+    bool ff_new_frame;
 #endif
 
 #ifdef USE_GSTREAMER
@@ -1156,14 +1167,19 @@ _source_load_progress(rig_source_t *source)
             return;
         }
 
-        source->ff_dst_frame = av_frame_alloc();
+        for (int i = 0; i < 2; i++) {
+            source->ff_buffered_state[i].dst_frame = av_frame_alloc();
+        }
 
 #warning "fixme: missing some ffmpeg cleanup"
+
+        source->ff_decode_work.data = source;
 
         source->timeline = rig_timeline_new(engine, FLT_MAX);
 
         source->type = SOURCE_TYPE_FFMPEG;
         state->status = LOAD_STATE_LOADED;
+
     } else
 #endif
 #ifdef USE_GSTREAMER
@@ -1437,86 +1453,21 @@ rig_source_attach_frame(rig_source_t *source,
     }
     case SOURCE_TYPE_FFMPEG: {
         rig_engine_t *engine = rig_component_props_get_engine(&source->component);
-        AVPacket packet;
-        int frame_ready = false;
-        int dst_size;
         cg_bitmap_t *bmp;
         cg_texture_2d_t *tex;
         cg_error_t *error = NULL;
+        struct ff_buffered_state *buffered_state =
+            &source->ff_buffered_state[!source->ff_decode_buf];
 
-        AVFrame *frame = av_frame_alloc();
-        if (!frame) {
-            c_warning("failed to allocate ffmpeg frame");
+        if (!source->ff_new_frame)
             break;
-        }
-
-        while(!frame_ready) {
-            int ret = av_read_frame(source->ff_fmt_ctx, &packet);
-            if (ret < 0) {
-                if (ret == AVERROR_EOF)
-                    c_warning("video EOF");
-                else
-                    c_warning("video ");
-                break;
-            }
-
-            if (packet.stream_index != source->ff_video_stream)
-                continue;
-
-            avcodec_decode_video2(source->ff_video_codec_ctx,
-                                  frame,
-                                  &frame_ready,
-                                  &packet);
-
-            av_packet_unref(&packet);
-        }
-
-        source->sws_ctx = sws_getCachedContext(source->sws_ctx,
-                                               frame->width,
-                                               frame->height,
-                                               frame->format,
-                                               frame->width,
-                                               frame->height,
-                                               AV_PIX_FMT_RGBA,
-                                               SWS_BICUBIC, /* flags */
-                                               NULL, /* src filter */
-                                               NULL, /* dst filter */
-                                               NULL); /* param */
-
-        dst_size = frame->width * frame->height * 4;
-        if (dst_size > source->ff_dst_frame_buf_size) {
-            av_freep(&source->ff_dst_frame_buf);
-            source->ff_dst_frame_buf = av_malloc(dst_size);
-            source->ff_dst_frame_buf_size = dst_size;
-        }
-
-        if (source->ff_dst_frame->width != frame->width ||
-            source->ff_dst_frame->height != frame->height)
-        {
-            if (source->ff_dst_frame->data)
-                av_frame_unref(source->ff_dst_frame);
-
-            avpicture_fill((AVPicture *)source->ff_dst_frame,
-                           source->ff_dst_frame_buf,
-                           AV_PIX_FMT_RGBA,
-                           frame->width,
-                           frame->height);
-        }
-
-        sws_scale(source->sws_ctx,
-                  frame->data, /* src slice */
-                  frame->linesize, /* src stride */
-                  0, /* src slice Y */
-                  frame->height, /* src slice H */
-                  source->ff_dst_frame->data, /* dest */
-                  source->ff_dst_frame->linesize); /* dest stride */
 
         bmp = cg_bitmap_new_for_data(engine->shell->cg_device,
-                                     frame->width,
-                                     frame->height,
+                                     buffered_state->width,
+                                     buffered_state->height,
                                      CG_PIXEL_FORMAT_RGBA_8888,
                                      0,
-                                     source->ff_dst_frame_buf);
+                                     buffered_state->dst_frame_buf);
 
         tex = cg_texture_2d_new_from_bitmap(bmp);
         cg_object_unref(bmp);
@@ -1533,7 +1484,7 @@ rig_source_attach_frame(rig_source_t *source,
 
         cg_object_unref(tex); /* ref taken by pipeline */
 
-        av_frame_free(&frame);
+        source->ff_new_frame = false;
 
         break;
     }
@@ -1628,4 +1579,129 @@ rig_source_set_running(rut_object_t *object, bool running)
                        &source->properties[RIG_SOURCE_PROP_RUNNING]);
 }
 
+static void
+decode_ffmpeg_frame_cb(uv_work_t *req)
+{
+    rig_source_t *source = req->data;
+    struct ff_buffered_state *buffered_state =
+        &source->ff_buffered_state[source->ff_decode_buf];
+    AVPacket packet;
+    int frame_ready = false;
+    int dst_size;
 
+    AVFrame *frame = av_frame_alloc();
+    if (!frame) {
+        c_warning("failed to allocate ffmpeg frame");
+        return;
+    }
+
+    while (!frame_ready) {
+        int ret = av_read_frame(source->ff_fmt_ctx, &packet);
+        if (ret < 0) {
+            if (ret == AVERROR_EOF)
+                c_warning("video EOF");
+            else
+                c_warning("video ");
+            break;
+        }
+
+        if (packet.stream_index != source->ff_video_stream)
+            continue;
+
+        avcodec_decode_video2(source->ff_video_codec_ctx,
+                              frame,
+                              &frame_ready,
+                              &packet);
+
+        av_packet_unref(&packet);
+    }
+
+    source->sws_ctx = sws_getCachedContext(source->sws_ctx,
+                                           frame->width,
+                                           frame->height,
+                                           frame->format,
+                                           frame->width,
+                                           frame->height,
+                                           AV_PIX_FMT_RGBA,
+                                           SWS_BICUBIC, /* flags */
+                                           NULL, /* src filter */
+                                           NULL, /* dst filter */
+                                           NULL); /* param */
+
+    dst_size = frame->width * frame->height * 4;
+    if (dst_size > buffered_state->dst_frame_buf_size) {
+        av_freep(&buffered_state->dst_frame_buf);
+        buffered_state->dst_frame_buf = av_malloc(dst_size);
+        buffered_state->dst_frame_buf_size = dst_size;
+    }
+
+    buffered_state->width = frame->width;
+    buffered_state->height = frame->height;
+
+#if 0
+    if (buffered_state->width != frame->width ||
+        buffered_state->height != frame->height)
+    {
+        av_frame_unref(buffered_state->dst_frame);
+
+        avpicture_fill((AVPicture *)buffered_state->dst_frame,
+                       buffered_state->dst_frame_buf,
+                       AV_PIX_FMT_RGBA,
+                       frame->width,
+                       frame->height);
+    }
+#endif
+
+    const uint8_t *rgba_dst_data[] = {
+        buffered_state->dst_frame_buf, /* RGBA all in single plane */
+        NULL,
+        NULL,
+        NULL
+    };
+    int rgba_dst_strides[] = {
+        frame->width * 4,
+        0,
+        0,
+        0
+    };
+
+    sws_scale(source->sws_ctx,
+              frame->data, /* src slice */
+              frame->linesize, /* src stride */
+              0, /* src slice Y */
+              frame->height, /* src slice H */
+              rgba_dst_data,
+              rgba_dst_strides);
+}
+
+static void
+decode_ffmpeg_frame_finished_cb(uv_work_t *req, int status)
+{
+    rig_source_t *source = req->data;
+
+    source->ff_decode_buf = !source->ff_decode_buf;
+    source->ff_new_frame = true;
+}
+
+/* Only called in frontend */
+void
+rig_source_prepare_for_frame(rut_object_t *object)
+{
+    rig_source_t *source = object;
+    rig_engine_t *engine = rig_component_props_get_engine(&source->component);
+    uv_loop_t *loop = rut_uv_shell_get_loop(engine->shell);
+
+    c_return_if_fail(engine->frontend);
+
+    if (source->type == SOURCE_TYPE_FFMPEG) {
+#if 1
+        decode_ffmpeg_frame_cb(&source->ff_decode_work);
+        decode_ffmpeg_frame_finished_cb(&source->ff_decode_work, 0);
+#else
+        uv_queue_work(loop,
+                      &source->ff_decode_work,
+                      decode_ffmpeg_frame_cb,
+                      decode_ffmpeg_frame_finished_cb);
+#endif
+    }
+}

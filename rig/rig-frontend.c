@@ -1703,6 +1703,8 @@ rig_frontend_start_frame(rig_frontend_t *frontend)
 
     rig_engine_progress_timelines(engine, frontend_progress);
 
+    rig_ui_start_frame(ui);
+
     /* Give the simulator some time to complete */
     now = cg_get_clock_time(shell->cg_device);
 
