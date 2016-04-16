@@ -2611,7 +2611,7 @@ rig_pb_unserialize_controller_properties(rig_pb_unserializer_t *unserializer,
         if (pb_property->path) {
             Rig__Path *pb_path = pb_property->path;
             rig_path_t *path =
-                rig_path_new(unserializer->engine->shell, property->spec->type);
+                rig_path_new(unserializer->engine, property->spec->type);
 
             unserialize_path_nodes(
                 unserializer, path, pb_path->n_nodes, pb_path->nodes);
