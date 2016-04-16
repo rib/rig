@@ -157,6 +157,8 @@ frontend_register_object_cb(rig_ui_t *ui,
 
     c_hash_table_insert(frontend->object_to_id_map, object, id_ptr);
     c_hash_table_insert(frontend->id_to_object_map, id_ptr, object);
+
+    rig_ui_register_object(ui, object);
 }
 
 uint64_t
@@ -171,6 +173,8 @@ frontend_unregister_object_cb(rig_ui_t *ui, void *object, void *user_data)
 {
     rig_frontend_t *frontend = user_data;
     void *id_ptr;
+
+    rig_ui_unregister_object(ui, object);
 
     id_ptr = c_hash_table_remove_value(frontend->object_to_id_map, object);
 

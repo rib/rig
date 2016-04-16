@@ -405,6 +405,8 @@ rig_ui_entity_component_added_notify(rig_ui_t *ui,
 
         /* TODO: remove limitation that we can only render a single light */
         ui->light = ui->lights->data;
+    } else if (rut_object_get_type(component) == &rig_source_type) {
+        ui->sources = c_llist_prepend(ui->sources, entity);
     }
 }
 
@@ -433,6 +435,8 @@ rig_ui_entity_component_pre_remove_notify(rig_ui_t *ui,
 
         /* TODO: remove limitation that we can only render a single light */
         ui->light = ui->lights ? ui->lights->data : NULL;
+    } else if (rut_object_get_type(component) == &rig_camera_type) {
+        ui->sources = c_llist_remove(ui->sources, entity);
     }
 }
 
@@ -1143,3 +1147,31 @@ rig_ui_reap_buffer(rig_ui_t *ui, rut_buffer_t *buffer)
 
     rig_engine_queue_delete(ui->engine, buffer);
 }
+
+void
+rig_ui_start_frame(rig_ui_t *ui)
+{
+    c_llist_t *l;
+
+    for (l = ui->sources; l; l = l->next) {
+        rig_source_prepare_for_frame(l->data);
+    }
+}
+
+void
+rig_ui_register_object(rig_ui_t *ui, rut_object_t *object)
+{
+    /* TODO: find a more scalable approach... */
+    if (rut_object_get_type(object) == &rig_source_type) {
+        ui->sources = c_llist_prepend(ui->sources, object);
+    }
+}
+
+void
+rig_ui_unregister_object(rig_ui_t *ui, rut_object_t *object)
+{
+    if (rut_object_get_type(object) == &rig_source_type) {
+        ui->sources= c_llist_remove(ui->sources, object);
+    }
+}
+
