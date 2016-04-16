@@ -27,8 +27,7 @@
  *
  */
 
-#ifndef __RIG_NINE_SLICE_H__
-#define __RIG_NINE_SLICE_H__
+#pragma once
 
 #include <cglib/cglib.h>
 
@@ -40,7 +39,6 @@ typedef struct _rig_nine_slice_t rig_nine_slice_t;
 extern rut_type_t rig_nine_slice_type;
 
 rig_nine_slice_t *rig_nine_slice_new(rig_engine_t *engine,
-                                     cg_texture_t *texture,
                                      float top,
                                      float right,
                                      float bottom,
@@ -53,13 +51,6 @@ void rig_nine_slice_set_size(rut_object_t *self, float width, float height);
 void rig_nine_slice_get_size(rut_object_t *self, float *width, float *height);
 
 void rig_nine_slice_set_image_size(rut_object_t *self, int width, int height);
-
-cg_texture_t *rig_nine_slice_get_texture(rig_nine_slice_t *nine_slice);
-
-void rig_nine_slice_set_texture(rig_nine_slice_t *nine_slice,
-                                cg_texture_t *texture);
-
-cg_pipeline_t *rig_nine_slice_get_pipeline(rig_nine_slice_t *nine_slice);
 
 cg_primitive_t *rig_nine_slice_get_primitive(rut_object_t *object);
 
@@ -83,5 +74,3 @@ void rig_nine_slice_set_right(rut_object_t *nine_slice, float right);
 void rig_nine_slice_set_top(rut_object_t *nine_slice, float top);
 
 void rig_nine_slice_set_bottom(rut_object_t *nine_slice, float bottom);
-
-#endif /* __RIG_NINE_SLICE_H__ */

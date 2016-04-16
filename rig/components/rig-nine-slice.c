@@ -54,13 +54,6 @@ struct _rig_nine_slice_t {
 
     rut_componentable_props_t component;
 
-    /* NB: The texture and pipeline properties are only used when using
-     * a nine-slice as a traditional widget. When using a nine-slice as
-     * a component then this will be NULL and the texture will be
-     * defined by a material component. */
-    cg_texture_t *texture;
-    cg_pipeline_t *pipeline;
-
     /* Since ::texture is optional so we track the width/height
      * separately */
     int tex_width;
@@ -75,9 +68,6 @@ struct _rig_nine_slice_t {
     float height;
 
     rut_mesh_t *mesh;
-
-    rut_graphable_props_t graphable;
-    rut_paintable_props_t paintable;
 
     c_list_t updated_cb_list;
 
@@ -321,110 +311,11 @@ _rig_nine_slice_free(void *object)
 
     rut_closure_list_remove_all(&nine_slice->updated_cb_list);
 
-    if (nine_slice->texture)
-        cg_object_unref(nine_slice->texture);
-
-    if (nine_slice->pipeline)
-        cg_object_unref(nine_slice->pipeline);
-
     free_mesh(nine_slice);
-
-    rut_graphable_destroy(nine_slice);
 
     rig_introspectable_destroy(nine_slice);
 
     rut_object_free(rig_nine_slice_t, object);
-}
-
-static void
-_rig_nine_slice_paint(rut_object_t *object,
-                      rut_paint_context_t *paint_ctx)
-{
-    rig_nine_slice_t *nine_slice = object;
-    rut_object_t *camera = paint_ctx->camera;
-    cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
-
-    float left = nine_slice->left;
-    float right = nine_slice->right;
-    float top = nine_slice->top;
-    float bottom = nine_slice->bottom;
-
-    /* simple stretch */
-    if (left == 0 && right == 0 && top == 0 && bottom == 0) {
-        cg_framebuffer_draw_rectangle(fb,
-                                      nine_slice->pipeline,
-                                      0,
-                                      0,
-                                      nine_slice->width,
-                                      nine_slice->height);
-    } else {
-        float width = nine_slice->width;
-        float height = nine_slice->height;
-        cg_texture_t *texture = nine_slice->texture;
-        float tex_width = cg_texture_get_width(texture);
-        float tex_height = cg_texture_get_height(texture);
-
-        /* s0,t0,s1,t1 define the texture coordinates for the center
-         * rectangle... */
-        float s0 = left / tex_width;
-        float t0 = top / tex_height;
-        float s1 = (tex_width - right) / tex_width;
-        float t1 = (tex_height - bottom) / tex_height;
-
-        float ex;
-        float ey;
-
-        ex = width - right;
-        if (ex < left)
-            ex = left;
-
-        ey = height - bottom;
-        if (ey < top)
-            ey = top;
-
-        {
-            float rectangles[] = {
-                /* top left corner */
-                0,    0,   left,                   top,
-                0.0,  0.0, s0,                     t0,
-
-                /* top middle */
-                left, 0,   MAX(left, ex),          top,
-                s0,   0.0, s1,                     t0,
-
-                /* top right */
-                ex,   0,   MAX(ex + right, width), top,
-                s1,   0.0, 1.0,                    t0,
-
-                /* mid left */
-                0,    top, left,                   ey,
-                0.0,  t0,  s0,                     t1,
-
-                /* center */
-                left, top, ex,                     ey,
-                s0,   t0,  s1,                     t1,
-
-                /* mid right */
-                ex,   top, MAX(ex + right, width), ey,
-                s1,   t0,  1.0,                    t1,
-
-                /* bottom left */
-                0,    ey,  left,                   MAX(ey + bottom, height),
-                0.0,  t1,  s0,                     1.0,
-
-                /* bottom center */
-                left, ey,  ex,                     MAX(ey + bottom, height),
-                s0,   t1,  s1,                     1.0,
-
-                /* bottom right */
-                ex,   ey,  MAX(ex + right, width), MAX(ey + bottom, height),
-                s1,   t1,  1.0,                    1.0
-            };
-
-            cg_framebuffer_draw_textured_rectangles(
-                fb, nine_slice->pipeline, rectangles, 9);
-        }
-    }
 }
 
 static rut_object_t *
@@ -434,7 +325,6 @@ _rig_nine_slice_copy(rut_object_t *object)
     rig_engine_t *engine = rig_component_props_get_engine(&nine_slice->component);
 
     return rig_nine_slice_new(engine,
-                              nine_slice->texture,
                               nine_slice->top,
                               nine_slice->right,
                               nine_slice->bottom,
@@ -448,17 +338,9 @@ rut_type_t rig_nine_slice_type;
 static void
 _rig_nine_slice_init_type(void)
 {
-
-    static rut_graphable_vtable_t graphable_vtable = { NULL, /* child remove */
-                                                       NULL, /* child add */
-                                                       NULL /* parent changed */
-    };
-
     static rut_componentable_vtable_t componentable_vtable = {
         .copy = _rig_nine_slice_copy
     };
-
-    static rut_paintable_vtable_t paintable_vtable = { _rig_nine_slice_paint };
 
     static rut_primable_vtable_t primable_vtable = {
         .get_primitive = rig_nine_slice_get_primitive
@@ -485,10 +367,6 @@ _rig_nine_slice_init_type(void)
 
     rut_type_init(type, C_STRINGIFY(TYPE), _rig_nine_slice_free);
     rut_type_add_trait(type,
-                       RUT_TRAIT_ID_GRAPHABLE,
-                       offsetof(TYPE, graphable),
-                       &graphable_vtable);
-    rut_type_add_trait(type,
                        RUT_TRAIT_ID_COMPONENTABLE,
                        offsetof(TYPE, component),
                        &componentable_vtable);
@@ -496,10 +374,6 @@ _rig_nine_slice_init_type(void)
                        RUT_TRAIT_ID_INTROSPECTABLE,
                        offsetof(TYPE, introspectable),
                        NULL); /* no implied vtable */
-    rut_type_add_trait(type,
-                       RUT_TRAIT_ID_PAINTABLE,
-                       offsetof(TYPE, paintable),
-                       &paintable_vtable);
     rut_type_add_trait(type,
                        RUT_TRAIT_ID_PRIMABLE,
                        0, /* no associated properties */
@@ -522,7 +396,6 @@ _rig_nine_slice_init_type(void)
 
 rig_nine_slice_t *
 rig_nine_slice_new(rig_engine_t *engine,
-                   cg_texture_t *texture,
                    float top,
                    float right,
                    float bottom,
@@ -539,8 +412,6 @@ rig_nine_slice_new(rig_engine_t *engine,
 
     c_list_init(&nine_slice->updated_cb_list);
 
-    rut_graphable_init(nine_slice);
-
     nine_slice->left = left;
     nine_slice->right = right;
     nine_slice->top = top;
@@ -551,58 +422,13 @@ rig_nine_slice_new(rig_engine_t *engine,
 
     nine_slice->mesh = NULL;
 
-    nine_slice->texture = NULL;
-    nine_slice->pipeline = NULL;
-    if (texture)
-        rig_nine_slice_set_texture(nine_slice, texture);
-    else {
-        nine_slice->tex_width = width;
-        nine_slice->tex_height = height;
-    }
+    nine_slice->tex_width = width;
+    nine_slice->tex_height = height;
 
-    rig_introspectable_init(
-        nine_slice, _rig_nine_slice_prop_specs, nine_slice->properties);
+    rig_introspectable_init(nine_slice, _rig_nine_slice_prop_specs,
+                            nine_slice->properties);
 
     return nine_slice;
-}
-
-cg_texture_t *
-rig_nine_slice_get_texture(rig_nine_slice_t *nine_slice)
-{
-    return nine_slice->texture;
-}
-
-void
-rig_nine_slice_set_texture(rig_nine_slice_t *nine_slice,
-                           cg_texture_t *texture)
-{
-    rut_shell_t *shell;
-
-    if (nine_slice->texture == texture)
-        return;
-
-    free_mesh(nine_slice);
-
-    if (nine_slice->texture)
-        cg_object_unref(nine_slice->texture);
-    if (nine_slice->pipeline)
-        cg_object_unref(nine_slice->pipeline);
-
-    shell = rig_component_props_get_shell(&nine_slice->component);
-    nine_slice->pipeline =
-        cg_pipeline_copy(shell->single_texture_2d_template);
-
-    if (texture) {
-        nine_slice->tex_width = cg_texture_get_width(texture);
-        nine_slice->tex_height = cg_texture_get_height(texture);
-
-        nine_slice->texture = cg_object_ref(texture);
-        cg_pipeline_set_layer_texture(nine_slice->pipeline, 0, texture);
-    } else {
-        nine_slice->tex_width = nine_slice->width;
-        nine_slice->tex_height = nine_slice->height;
-        nine_slice->texture = NULL;
-    }
 }
 
 void
@@ -654,12 +480,6 @@ rig_nine_slice_get_size(rut_object_t *self, float *width, float *height)
     rig_nine_slice_t *nine_slice = self;
     *width = nine_slice->width;
     *height = nine_slice->height;
-}
-
-cg_pipeline_t *
-rig_nine_slice_get_pipeline(rig_nine_slice_t *nine_slice)
-{
-    return nine_slice->pipeline;
 }
 
 cg_primitive_t *

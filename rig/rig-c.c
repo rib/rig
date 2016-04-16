@@ -548,7 +548,6 @@ r_nine_slice_new(RModule *module,
 
     prop_ctx->logging_disabled++;
     component = rig_nine_slice_new(engine,
-                                   NULL, /* texture */
                                    top, right, bottom, left,
                                    width, right);
     prop_ctx->logging_disabled--;
