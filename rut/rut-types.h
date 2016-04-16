@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RUT_TYPES_H_
-#define _RUT_TYPES_H_
+#pragma once
 
 #include "rut-type.h"
 
@@ -62,13 +61,6 @@ extern rut_ui_enum_t _rut_projection_ui_enum;
 typedef struct _rut_box_t {
     float x1, y1, x2, y2;
 } rut_box_t;
-
-typedef struct _rut_rectangle_int_t {
-    int x;
-    int y;
-    int width;
-    int height;
-} rut_rectangle_int_t;
 
 typedef struct _rut_vector3_t {
     float x, y, z;
@@ -113,5 +105,3 @@ typedef struct _rut_preferred_size_t {
 #define rut_container_of(ptr, sample, member)                                  \
     (void *)((char *)(ptr) - ((char *)&(sample)->member - (char *)(sample)))
 #endif
-
-#endif /* _RUT_TYPES_H_ */
