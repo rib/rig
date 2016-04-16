@@ -1556,8 +1556,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
                            rig_paint_context_t *paint_ctx)
 {
     c_array_t *journal = renderer->journal;
-    rut_paint_context_t *rut_paint_ctx = &paint_ctx->_parent;
-    rut_object_t *camera = rut_paint_ctx->camera;
+    rut_object_t *camera = paint_ctx->camera;
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
     rig_engine_t *engine = paint_ctx->engine;
     int start, dir, end;
@@ -1718,9 +1717,8 @@ static rut_traverse_visit_flags_t
 entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
 {
     rig_paint_context_t *paint_ctx = user_data;
-    rut_paint_context_t *rut_paint_ctx = user_data;
     rig_renderer_t *renderer = paint_ctx->renderer;
-    rut_object_t *camera = rut_paint_ctx->camera;
+    rut_object_t *camera = paint_ctx->camera;
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
 
     if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
@@ -1786,9 +1784,9 @@ static rut_traverse_visit_flags_t
 entitygraph_post_paint_cb(rut_object_t *object, int depth, void *user_data)
 {
     if (rut_object_is(object, RUT_TRAIT_ID_TRANSFORMABLE)) {
-        rut_paint_context_t *rut_paint_ctx = user_data;
+        rig_paint_context_t *paint_ctx = user_data;
         cg_framebuffer_t *fb =
-            rut_camera_get_framebuffer(rut_paint_ctx->camera);
+            rut_camera_get_framebuffer(paint_ctx->camera);
         cg_framebuffer_pop_matrix(fb);
     }
 
@@ -1799,14 +1797,13 @@ void
 paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
                          rig_entity_t *camera_entity)
 {
-    rut_paint_context_t *rut_paint_ctx = &paint_ctx->_parent;
-    rut_object_t *saved_camera = rut_paint_ctx->camera;
+    rut_object_t *saved_camera = paint_ctx->camera;
     rut_object_t *camera =
         rig_entity_get_component(camera_entity, RUT_COMPONENT_TYPE_CAMERA);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
 
-    rut_paint_ctx->camera = camera;
+    paint_ctx->camera = camera;
 
     rut_camera_flush(camera);
 
@@ -1820,7 +1817,7 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
 
     rut_camera_end_frame(camera);
 
-    rut_paint_ctx->camera = saved_camera;
+    paint_ctx->camera = saved_camera;
 }
 
 static void

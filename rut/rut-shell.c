@@ -46,7 +46,6 @@
 #include "rut-shell.h"
 #include "rut-util.h"
 #include "rut-inputable.h"
-#include "rut-paintable.h"
 #include "rut-transform.h"
 #include "rut-input-region.h"
 #include "rut-mimable.h"

@@ -822,8 +822,6 @@
         'rut/rut-util.c',
         'rut/rut-geometry.h',
         'rut/rut-geometry.c',
-        'rut/rut-paintable.h',
-        'rut/rut-paintable.c',
         'rut/rut-closure.h',
         'rut/rut-closure.c',
         'rut/rut-gaussian-blurrer.h',
