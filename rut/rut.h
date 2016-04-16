@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef _RUT_H_
-#define _RUT_H_
+#pragma once
 
 #ifndef RIG_SIMULATOR_ONLY
 #include <cglib/cglib.h>
@@ -67,43 +66,3 @@
 #include "rut-closure.h"
 #include "rut-gradient.h"
 #include "rut-input-region.h"
-
-
-#ifdef RUT_EDITOR_ENABLED
-#include "rut-pickable.h"
-#include "rut-stack.h"
-#include "rut-transform.h"
-#include "rut-rectangle.h"
-#include "rut-ui-viewport.h"
-#include "rut-nine-slice.h"
-#include "rut-image.h"
-#include "rut-box-layout.h"
-#include "rut-bin.h"
-#include "rut-fixed.h"
-#include "rut-composite-sizable.h"
-#include "rut-shim.h"
-
-#include "rut-text-buffer.h"
-#include "rut-text.h"
-#include "rut-number-slider.h"
-#include "rut-vec3-slider.h"
-#include "rut-drop-down.h"
-#include "rut-entry.h"
-#include "rut-toggle.h"
-#include "rut-color-picker.h"
-#include "rut-color-button.h"
-#include "rut-icon.h"
-#include "rut-flow-layout.h"
-#include "rut-fold.h"
-#include "rut-button.h"
-#include "rut-slider.h"
-#include "rut-scale.h"
-#include "rut-icon-button.h"
-#include "rut-drag-bin.h"
-#include "rut-icon-toggle.h"
-#include "rut-icon-toggle-set.h"
-#include "rut-rotation-inspector.h"
-#include "rut-adb.h"
-#endif
-
-#endif /* _RUT_H_ */
