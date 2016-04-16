@@ -75,7 +75,7 @@ typedef struct _rig_asset_t rig_asset_t;
 
 void _rig_asset_type_init(void);
 
-rig_asset_t *rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
+rig_asset_t *rig_asset_new_from_pb_asset(rig_pb_unserializer_t *unserializer,
                                          Rig__Asset *pb_asset,
                                          rut_exception_t **e);
 

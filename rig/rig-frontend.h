@@ -129,9 +129,9 @@ struct _rig_frontend_t {
 
     rig_engine_op_map_context_t map_to_frontend_objects_op_ctx;
     rig_engine_op_apply_context_t apply_op_ctx;
-    rig_pb_un_serializer_t *prop_change_unserializer;
+    rig_pb_unserializer_t *prop_change_unserializer;
 
-    rig_pb_un_serializer_t *ui_unserializer;
+    rig_pb_unserializer_t *ui_unserializer;
 
     c_hash_table_t *id_to_object_map;
     c_hash_table_t *object_to_id_map;

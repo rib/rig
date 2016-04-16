@@ -1707,23 +1707,16 @@ pb_init_boxed_vec4(rut_boxed_t *boxed, Rig__Vec4 *pb_vec4)
 }
 
 static rut_object_t *
-unserializer_try_find_object(rig_pb_un_serializer_t *unserializer, uint64_t id)
+unserializer_try_find_object(rig_pb_unserializer_t *unserializer,
+                             uint64_t id)
 {
-    rut_object_t *ret;
+    void *user_data = unserializer->id_to_object_data;
 
-    if (unserializer->id_to_object_callback) {
-        void *user_data = unserializer->id_to_object_data;
-        ret = unserializer->id_to_object_callback(id, user_data);
-    } else if (unserializer->id_to_object_map)
-        ret = c_hash_table_lookup(unserializer->id_to_object_map, &id);
-    else
-        ret = NULL;
-
-    return ret;
+    return unserializer->id_to_object_callback(unserializer->engine->ui, id, user_data);
 }
 
 static rut_object_t *
-unserializer_find_object(rig_pb_un_serializer_t *unserializer,
+unserializer_find_object(rig_pb_unserializer_t *unserializer,
                          uint64_t id)
 {
     if (id == 0) {
@@ -1742,7 +1735,7 @@ unserializer_find_object(rig_pb_un_serializer_t *unserializer,
 }
 
 bool
-rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
+rig_pb_init_boxed_value(rig_pb_unserializer_t *unserializer,
                         rut_boxed_t *boxed,
                         rig_property_type_t type,
                         Rig__PropertyValue *pb_value)
@@ -1832,7 +1825,7 @@ rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
 }
 
 void
-rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserializer_collect_error(rig_pb_unserializer_t *unserializer,
                                   const char *format,
                                   ...)
 {
@@ -1848,49 +1841,18 @@ rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
     unserializer->errors = c_llist_prepend(unserializer->errors, error);
 }
 
-static void
-default_unserializer_unregister_object_cb(uint64_t id,
-                                          void *user_data)
-{
-    rig_pb_un_serializer_t *unserializer = user_data;
-    if (!c_hash_table_remove(unserializer->id_to_object_map, &id))
-        c_warning("Tried to unregister an id that wasn't previously registered");
-}
-
 void
-rig_pb_unserializer_unregister_object(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserializer_unregister_object(rig_pb_unserializer_t *unserializer,
                                       uint64_t id)
 {
     void *user_data = unserializer->object_unregister_data;
-    unserializer->object_unregister_callback(id, user_data);
-}
 
-static void
-default_unserializer_register_object_cb(void *object,
-                                        uint64_t id,
-                                        void *user_data)
-{
-    rig_pb_un_serializer_t *unserializer = user_data;
-    uint64_t *key;
-
-    if (!unserializer->id_to_object_map) {
-        /* This hash table maps from uint64_t ids to objects while loading */
-        unserializer->id_to_object_map =
-            c_hash_table_new(c_int64_hash, c_int64_equal);
-    }
-
-    key = rut_memory_stack_memalign(
-        unserializer->stack, sizeof(uint64_t), C_ALIGNOF(uint64_t));
-
-    *key = id;
-
-    c_return_if_fail(id != 0);
-
-    c_hash_table_insert(unserializer->id_to_object_map, key, object);
+    unserializer->object_unregister_callback(unserializer->engine->ui,
+                                             id, user_data);
 }
 
 bool
-rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserializer_register_object(rig_pb_unserializer_t *unserializer,
                                     void *object,
                                     uint64_t id)
 {
@@ -1915,14 +1877,15 @@ rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
     }
 #endif
 
-    unserializer->object_register_callback(
-        object, id, unserializer->object_register_data);
+    unserializer->object_register_callback(unserializer->engine->ui,
+                                           object, id,
+                                           unserializer->object_register_data);
 
     return true;
 }
 
 static bool
-set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
+set_property_from_pb_boxed(rig_pb_unserializer_t *unserializer,
                            rig_property_t *property,
                            Rig__Boxed *pb_boxed)
 {
@@ -2001,7 +1964,7 @@ set_property_from_pb_boxed(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-set_properties_from_pb_boxed_values(rig_pb_un_serializer_t *unserializer,
+set_properties_from_pb_boxed_values(rig_pb_unserializer_t *unserializer,
                                     rut_object_t *object,
                                     size_t n_properties,
                                     Rig__Boxed **properties)
@@ -2031,7 +1994,7 @@ set_properties_from_pb_boxed_values(rig_pb_un_serializer_t *unserializer,
 }
 
 rut_object_t *
-rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
                              Rig__Entity__Component *pb_component)
 {
     uint64_t component_id;
@@ -2274,7 +2237,7 @@ rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_components(rig_pb_un_serializer_t *unserializer,
+unserialize_components(rig_pb_unserializer_t *unserializer,
                        rig_entity_t *entity,
                        Rig__Entity *pb_entity)
 {
@@ -2294,7 +2257,7 @@ unserialize_components(rig_pb_un_serializer_t *unserializer,
 }
 
 rig_entity_t *
-rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_entity(rig_pb_unserializer_t *unserializer,
                           Rig__Entity *pb_entity)
 {
     rig_entity_t *entity;
@@ -2361,7 +2324,7 @@ rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_entities(rig_pb_un_serializer_t *unserializer,
+unserialize_entities(rig_pb_unserializer_t *unserializer,
                      int n_entities,
                      Rig__Entity **entities)
 {
@@ -2379,7 +2342,7 @@ unserialize_entities(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_assets(rig_pb_un_serializer_t *unserializer,
+unserialize_assets(rig_pb_unserializer_t *unserializer,
                    int n_assets,
                    Rig__Asset **assets)
 {
@@ -2432,7 +2395,7 @@ unserialize_assets(rig_pb_un_serializer_t *unserializer,
 }
 
 rig_view_t *
-rig_pb_unserialize_view(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_view(rig_pb_unserializer_t *unserializer,
                         Rig__SimpleObject *pb_view)
 {
     rig_view_t *view = NULL;
@@ -2456,7 +2419,7 @@ rig_pb_unserialize_view(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_buffers(rig_pb_un_serializer_t *unserializer,
+unserialize_buffers(rig_pb_unserializer_t *unserializer,
                     int n_buffers,
                     Rig__Buffer **pb_buffers)
 {
@@ -2471,7 +2434,7 @@ unserialize_buffers(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_views(rig_pb_un_serializer_t *unserializer,
+unserialize_views(rig_pb_unserializer_t *unserializer,
                   int n_views,
                   Rig__SimpleObject **views)
 {
@@ -2486,7 +2449,7 @@ unserialize_views(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_path_nodes(rig_pb_un_serializer_t *unserializer,
+unserialize_path_nodes(rig_pb_unserializer_t *unserializer,
                        rig_path_t *path,
                        int n_nodes,
                        Rig__Node **nodes)
@@ -2560,7 +2523,7 @@ unserialize_path_nodes(rig_pb_un_serializer_t *unserializer,
 }
 
 void
-rig_pb_unserialize_controller_properties(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_controller_properties(rig_pb_unserializer_t *unserializer,
                                          rig_controller_t *controller,
                                          int n_properties,
                                          Rig__Controller__Property **properties)
@@ -2741,7 +2704,7 @@ have_boxed_pb_property(Rig__Boxed **properties,
 }
 
 rig_controller_t *
-rig_pb_unserialize_controller_bare(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_controller_bare(rig_pb_unserializer_t *unserializer,
                                    Rig__Controller *pb_controller)
 {
     const char *name;
@@ -2784,7 +2747,7 @@ rig_pb_unserialize_controller_bare(rig_pb_un_serializer_t *unserializer,
 }
 
 static void
-unserialize_controllers(rig_pb_un_serializer_t *unserializer,
+unserialize_controllers(rig_pb_unserializer_t *unserializer,
                         int n_controllers,
                         Rig__Controller **controllers)
 {
@@ -2828,26 +2791,30 @@ unserialize_controllers(rig_pb_un_serializer_t *unserializer,
     }
 }
 
-rig_pb_un_serializer_t *
-rig_pb_unserializer_new(rig_engine_t *engine)
+rig_pb_unserializer_t *
+rig_pb_unserializer_new(rig_engine_t *engine,
+                        rig_pb_unserializer_object_register_callback_t register_cb,
+                        rig_pb_unserializer_object_un_register_callback_t unregister_cb,
+                        rig_pb_unserializer_id_to_object_callback_t id_to_obj_cb,
+                        void *user_data)
 {
-    rig_pb_un_serializer_t *unserializer = c_slice_new0(rig_pb_un_serializer_t);
+    rig_pb_unserializer_t *unserializer = c_slice_new0(rig_pb_unserializer_t);
 
     unserializer->engine = engine;
     unserializer->stack = engine->frame_stack;
 
-    unserializer->object_register_callback =
-        default_unserializer_register_object_cb;
-    unserializer->object_register_data = unserializer;
-    unserializer->object_unregister_callback =
-        default_unserializer_unregister_object_cb;
-    unserializer->object_unregister_data = unserializer;
+    unserializer->object_register_callback = register_cb;
+    unserializer->object_register_data = user_data;
+    unserializer->object_unregister_callback = unregister_cb;
+    unserializer->object_unregister_data = user_data;
+    unserializer->id_to_object_callback = id_to_obj_cb;
+    unserializer->id_to_object_data = user_data;
 
     return unserializer;
 }
 
 void
-rig_pb_unserializer_set_stack(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserializer_set_stack(rig_pb_unserializer_t *unserializer,
                               rut_memory_stack_t *stack)
 {
     unserializer->stack = stack;
@@ -2855,8 +2822,8 @@ rig_pb_unserializer_set_stack(rig_pb_un_serializer_t *unserializer,
 
 void
 rig_pb_unserializer_set_object_register_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_object_register_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_object_register_callback_t callback,
     void *user_data)
 {
     unserializer->object_register_callback = callback;
@@ -2865,8 +2832,8 @@ rig_pb_unserializer_set_object_register_callback(
 
 void
 rig_pb_unserializer_set_object_unregister_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_object_un_register_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_object_un_register_callback_t callback,
     void *user_data)
 {
     unserializer->object_unregister_callback = callback;
@@ -2875,8 +2842,8 @@ rig_pb_unserializer_set_object_unregister_callback(
 
 void
 rig_pb_unserializer_set_id_to_object_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_id_to_objec_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_id_to_object_callback_t callback,
     void *user_data)
 {
     unserializer->id_to_object_callback = callback;
@@ -2885,8 +2852,8 @@ rig_pb_unserializer_set_id_to_object_callback(
 
 void
 rig_pb_unserializer_set_asset_unserialize_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_asset_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_asset_callback_t callback,
     void *user_data)
 {
     unserializer->unserialize_asset_callback = callback;
@@ -2894,7 +2861,7 @@ rig_pb_unserializer_set_asset_unserialize_callback(
 }
 
 void
-rig_pb_unserializer_log_errors(rig_pb_un_serializer_t *unserializer)
+rig_pb_unserializer_log_errors(rig_pb_unserializer_t *unserializer)
 {
     c_llist_t *l;
 
@@ -2925,7 +2892,7 @@ rig_pb_unserializer_log_errors(rig_pb_un_serializer_t *unserializer)
 }
 
 void
-rig_pb_unserializer_clear_errors(rig_pb_un_serializer_t *unserializer)
+rig_pb_unserializer_clear_errors(rig_pb_unserializer_t *unserializer)
 {
     c_llist_t *l;
 
@@ -2939,17 +2906,14 @@ rig_pb_unserializer_clear_errors(rig_pb_un_serializer_t *unserializer)
 }
 
 void
-rig_pb_unserializer_destroy(rig_pb_un_serializer_t *unserializer)
+rig_pb_unserializer_destroy(rig_pb_unserializer_t *unserializer)
 {
-    if (unserializer->id_to_object_map)
-        c_hash_table_destroy(unserializer->id_to_object_map);
-
     rig_pb_unserializer_log_errors(unserializer);
     rig_pb_unserializer_clear_errors(unserializer);
 }
 
 rig_ui_t *
-rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_ui(rig_pb_unserializer_t *unserializer,
                       const Rig__UI *pb_ui)
 {
     rig_ui_t *ui = rig_ui_new(unserializer->engine);
@@ -3018,7 +2982,7 @@ rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
 }
 
 rut_buffer_t *
-rig_pb_unserialize_buffer(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_buffer(rig_pb_unserializer_t *unserializer,
                           Rig__Buffer *pb_buffer)
 {
     rut_buffer_t *buffer;
@@ -3056,7 +3020,7 @@ rig_pb_unserialize_buffer(rig_pb_un_serializer_t *unserializer,
 /* NB: caller's responsibility to call rig_ui_add_buffer() for new
  * buffers as appropriate */
 int
-rig_pb_unserialize_buffers(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_buffers(rig_pb_unserializer_t *unserializer,
                            Rig__Buffer **pb_buffers,
                            rut_buffer_t **buffers,
                            int n_buffers)
@@ -3086,7 +3050,7 @@ ERROR:
 
 /* Expects any required buffers to have already been registered... */
 int
-rig_pb_unserialize_attributes(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_attributes(rig_pb_unserializer_t *unserializer,
                               Rig__Attribute **pb_attributes,
                               rut_attribute_t **attributes,
                               int n_attributes)
@@ -3215,7 +3179,7 @@ ERROR:
 }
 
 rut_mesh_t *
-rig_pb_unserialize_rut_mesh(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_rut_mesh(rig_pb_unserializer_t *unserializer,
                             Rig__Mesh *pb_mesh)
 {
     rut_buffer_t *buffers[pb_mesh->n_buffers];

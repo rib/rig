@@ -113,6 +113,44 @@ stack_alloc(void *allocator_data, size_t size)
     return rut_memory_stack_alloc(allocator_data, size);
 }
 
+static void
+unserializer_unregister_object_cb(rig_ui_t *ui,
+                                  uint64_t id,
+                                  void *user_data)
+{
+    c_hash_table_t *id_to_object_map = user_data;
+
+    if (!c_hash_table_remove(id_to_object_map, &id))
+        c_warning("Tried to unregister an id that wasn't previously registered");
+}
+
+
+static void
+unserializer_register_object_cb(rig_ui_t *ui,
+                                void *object,
+                                uint64_t id,
+                                void *user_data)
+{
+    c_hash_table_t *id_to_object_map = user_data;
+    uint64_t *key = rut_memory_stack_memalign(ui->engine->frame_stack,
+                                              sizeof(uint64_t),
+                                              C_ALIGNOF(uint64_t));
+
+    *key = id;
+
+    c_return_if_fail(id != 0);
+
+    c_hash_table_insert(id_to_object_map, key, object);
+}
+
+static void *
+unserializer_lookup_object_cb(rig_ui_t *ui, uint64_t id, void *user_data)
+{
+    c_hash_table_t *id_to_object_map = user_data;
+
+    return c_hash_table_lookup(id_to_object_map, &id);
+}
+
 rig_ui_t *
 rig_load(rig_engine_t *engine, const char *file)
 {
@@ -122,9 +160,13 @@ rig_load(rig_engine_t *engine, const char *file)
     size_t len;
     c_error_t *error = NULL;
     bool needs_munmap = false;
-    rig_pb_un_serializer_t *unserializer;
+    rig_pb_unserializer_t *unserializer;
     Rig__UI *pb_ui;
     rig_ui_t *ui;
+
+    /* This hash table maps from uint64_t ids to objects while loading */
+    c_hash_table_t *id_to_object_map = 
+        c_hash_table_new(c_int64_hash, c_int64_equal);
 
     /* We use a special allocator while unpacking protocol buffers
      * that lets us use the frame_stack. This means much
@@ -148,9 +190,13 @@ rig_load(rig_engine_t *engine, const char *file)
         return NULL;
     }
 
-    unserializer = rig_pb_unserializer_new(engine);
-
     pb_ui = rig__ui__unpack(&protobuf_c_allocator, len, contents);
+
+    unserializer = rig_pb_unserializer_new(engine,
+                                           unserializer_register_object_cb,
+                                           unserializer_unregister_object_cb,
+                                           unserializer_lookup_object_cb,
+                                           id_to_object_map);
 
     ui = rig_pb_unserialize_ui(unserializer, pb_ui);
 
@@ -162,6 +208,8 @@ rig_load(rig_engine_t *engine, const char *file)
         c_free(contents);
 
     rig_pb_unserializer_destroy(unserializer);
+
+    c_hash_table_destroy(id_to_object_map);
 
     return ui;
 }

@@ -87,7 +87,7 @@ struct _rig_slave_t {
     c_hash_table_t *edit_id_to_play_object_map;
     c_hash_table_t *play_object_to_edit_id_map;
 
-    rig_pb_un_serializer_t *ui_unserializer;
+    rig_pb_unserializer_t *ui_unserializer;
 
     rig_engine_op_map_context_t map_op_ctx;
     rig_engine_op_apply_context_t apply_op_ctx;
