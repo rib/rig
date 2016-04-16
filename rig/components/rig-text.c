@@ -247,7 +247,7 @@ _rig_text_get_preferred_height(rut_object_t *object,
 }
 
 static void
-_rig_text_add_preferred_size_callback(void *object,
+_rig_text_add_preferred_size_callback(rut_object_t *object,
                                       rut_closure_t *closure)
 {
     rig_text_t *text = object;
