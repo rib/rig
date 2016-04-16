@@ -157,7 +157,7 @@ Rig__Operation **rig_engine_serialize_ops(rig_engine_t *engine,
 
 typedef struct _rig_engine_op_apply_context_t {
     rig_engine_t *engine;
-    rig_pb_un_serializer_t *unserializer;
+    rig_pb_unserializer_t *unserializer;
     void (*register_id_cb)(void *object, uint64_t id, void *user_data);
     void (*unregister_id_cb)(uint64_t id, void *user_data);
     void (*id_to_object_map)(uint64_t id, void *user_data);
@@ -169,8 +169,8 @@ typedef struct _rig_engine_op_apply_context_t {
 void rig_engine_op_apply_context_init(
     rig_engine_op_apply_context_t *ctx,
     rig_engine_t *engine,
-    void (*register_id_cb)(void *object, uint64_t id, void *user_data),
-    void *(*object_lookup_cb)(uint64_t id, void *user_data),
+    void (*register_id_cb)(rig_ui_t *ui, void *object, uint64_t id, void *user_data),
+    void *(*object_lookup_cb)(rig_ui_t *ui, uint64_t id, void *user_data),
     void *user_data);
 
 void rig_engine_op_apply_context_destroy(rig_engine_op_apply_context_t *ctx);

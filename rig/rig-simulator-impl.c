@@ -103,9 +103,10 @@ simulator_lookup_object(rig_simulator_t *simulator, uint64_t id)
 }
 
 static void *
-simulator_lookup_object_cb(uint64_t id, void *user_data)
+simulator_lookup_object_cb(rig_ui_t *ui, uint64_t id, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
+
     return simulator_lookup_object(simulator, id);
 }
 
@@ -142,7 +143,10 @@ simulator_map_object_to_frontend_id_cb(uint64_t id, void *user_data)
 }
 
 static void
-simulator_register_object_with_id_cb(void *object, uint64_t id, void *user_data)
+simulator_register_object_with_id_cb(rig_ui_t *ui,
+                                     void *object,
+                                     uint64_t id,
+                                     void *user_data)
 {
     c_return_if_fail(id != 0);
 
@@ -172,7 +176,7 @@ simulator_register_object_cb(void *object, void *user_data)
 }
 
 static void
-simulator_unregister_object_cb(void *object, void *user_data)
+simulator_garbage_collect_object_cb(void *object, void *user_data)
 {
     rig_simulator_t *simulator = user_data;
 
@@ -529,7 +533,7 @@ simulator_on_run_cb(rut_shell_t *shell, void *user_data)
 
     /* Finish the simulator specific engine setup...
      */
-    engine->garbage_collect_callback = simulator_unregister_object_cb;
+    engine->garbage_collect_callback = simulator_garbage_collect_object_cb;
     engine->garbage_collect_data = simulator;
 
     rig_engine_op_apply_context_init(&simulator->apply_op_ctx,

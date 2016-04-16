@@ -126,7 +126,7 @@ frontend_lookup_object(rig_frontend_t *frontend, uint64_t id)
 }
 
 static void *
-frontend_lookup_object_cb(uint64_t id, void *user_data)
+frontend_lookup_object_cb(rig_ui_t *ui, uint64_t id, void *user_data)
 {
     rig_frontend_t *frontend = user_data;
     return frontend_lookup_object(frontend, id);
@@ -141,13 +141,15 @@ frontend_map_simulator_id_to_object_cb(uint64_t id, void *user_data)
 }
 
 static void
-frontend_register_object_cb(void *object, uint64_t id, void *user_data)
+frontend_register_object_cb(rig_ui_t *ui,
+                            void *object,
+                            uint64_t id,
+                            void *user_data)
 {
     rig_frontend_t *frontend = user_data;
     uint64_t *id_ptr;
 
-    /* There's no need for temporary IDs with a 'master simulator'
-     * that can directly generate canonical IDs */
+    /* ID's with the least significant bit set are reserved */
     c_return_if_fail(!(id & 1));
 
     id_ptr = rut_magazine_chunk_alloc(_rig_frontend_object_id_magazine);
@@ -165,10 +167,14 @@ rig_frontend_lookup_id(rig_frontend_t *frontend, void *object)
 }
 
 static void
-frontend_unregister_object_cb(void *object, void *user_data)
+frontend_unregister_object_cb(rig_ui_t *ui, void *object, void *user_data)
 {
     rig_frontend_t *frontend = user_data;
-    void *id_ptr = c_hash_table_remove_value(frontend->object_to_id_map, object);
+    void *id_ptr;
+
+    id_ptr = c_hash_table_remove_value(frontend->object_to_id_map, object);
+
+    c_warn_if_fail(id_ptr);
 
     if (id_ptr)
         c_hash_table_remove(frontend->id_to_object_map, id_ptr);
@@ -212,12 +218,14 @@ rig_frontend_print_mappings(rig_frontend_t *frontend)
 void
 rig_frontend_garbage_collect_cb(void *object, void *user_data)
 {
-    frontend_unregister_object_cb(object, user_data);
+    rig_frontend_t *frontend = user_data;
+
+    frontend_unregister_object_cb(frontend->engine->ui, object, user_data);
 }
 
 static void
 apply_property_change(rig_frontend_t *frontend,
-                      rig_pb_un_serializer_t *unserializer,
+                      rig_pb_unserializer_t *unserializer,
                       Rig__PropertyChange *pb_change)
 {
     void *object;
@@ -284,7 +292,7 @@ frontend__update_ui(Rig__Frontend_Service *service,
     rig_ui_t *ui = engine->ui;
     int i, j;
     int n_property_changes;
-    rig_pb_un_serializer_t *unserializer;
+    rig_pb_unserializer_t *unserializer;
     rig_engine_op_map_context_t *map_to_frontend_objects_op_ctx;
     rig_engine_op_apply_context_t *apply_op_ctx;
     Rig__UIEdit *pb_ui_edit;
@@ -1212,7 +1220,6 @@ rig_frontend_new(rut_shell_t *shell)
     rig_frontend_t *frontend = rut_object_alloc0(
         rig_frontend_t, &rig_frontend_type, _rig_frontend_init_type);
     rig_engine_t *engine;
-    rig_pb_un_serializer_t *unserializer;
     uint8_t rgba_pre_white[] = { 0xff, 0xff, 0xff, 0xff };
 
     frontend->object_to_id_map = c_hash_table_new(NULL, /* direct hash */
@@ -1261,13 +1268,15 @@ rig_frontend_new(rut_shell_t *shell)
     /*
      * This unserializer is used to unserialize UIs in frontend__load
      * for example...
+     *
+     * XXX: not expecting any objects to be unregistered.
      */
-    unserializer = rig_pb_unserializer_new(engine);
-    rig_pb_unserializer_set_object_register_callback(
-        unserializer, frontend_register_object_cb, frontend);
-    rig_pb_unserializer_set_id_to_object_callback(
-        unserializer, frontend_lookup_object_cb, frontend);
-    frontend->ui_unserializer = unserializer;
+    frontend->ui_unserializer =
+        rig_pb_unserializer_new(engine,
+                                frontend_register_object_cb,
+                                NULL, /* unregister */
+                                frontend_lookup_object_cb,
+                                frontend); /* user data */
 
     rig_engine_op_apply_context_init(&frontend->apply_op_ctx,
                                      engine,
@@ -1280,13 +1289,14 @@ rig_frontend_new(rut_shell_t *shell)
                                    frontend_map_simulator_id_to_object_cb,
                                    frontend);
 
-    unserializer = rig_pb_unserializer_new(engine);
-    /* Just to make sure we don't mistakenly use this unserializer to
-     * register any objects... */
-    rig_pb_unserializer_set_object_register_callback(unserializer, NULL, NULL);
-    rig_pb_unserializer_set_id_to_object_callback(
-        unserializer, frontend_lookup_object_cb, frontend);
-    frontend->prop_change_unserializer = unserializer;
+    /* XXX: don't expect new objects to be registered via this
+     * unserializer... */
+    frontend->prop_change_unserializer =
+        rig_pb_unserializer_new(engine,
+                                NULL, /* register */
+                                NULL, /* unregister */
+                                frontend_lookup_object_cb,
+                                frontend);
 
     frontend->renderer = rig_renderer_new(frontend);
     rig_renderer_init(frontend->renderer);

@@ -140,7 +140,7 @@ load_ui(rig_slave_t *slave)
     Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
     rig_engine_t *engine = slave->engine;
     float width, height;
-    rig_pb_un_serializer_t *unserializer;
+    rig_pb_unserializer_t *unserializer;
     const Rig__UI *pb_ui = slave->pending_ui_load;
     rig_ui_t *ui;
 

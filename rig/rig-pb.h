@@ -32,7 +32,7 @@
 #include <rut.h>
 
 typedef struct _rig_pb_serializer_t rig_pb_serializer_t;
-typedef struct _rig_pb_un_serializer_t rig_pb_un_serializer_t;
+typedef struct _rig_pb_unserializer_t rig_pb_unserializer_t;
 
 #include "rig-engine.h"
 #include "rig-ui.h"
@@ -214,36 +214,40 @@ Rig__Operation **rig_pb_serialize_ops_queue(rig_pb_serializer_t *serializer,
 Rig__PropertyValue *pb_property_value_new(rig_pb_serializer_t *serializer,
                                           const rut_boxed_t *value);
 
-typedef void (*rig_pb_un_serializer_object_register_callback_t)(
-    void *object, uint64_t id, void *user_data);
+typedef void (*rig_pb_unserializer_object_register_callback_t)(rig_ui_t *ui,
+                                                               void *object,
+                                                               uint64_t id,
+                                                               void *user_data);
 
-typedef void (*rig_pb_un_serializer_object_un_register_callback_t)(
-    uint64_t id, void *user_data);
+typedef void (*rig_pb_unserializer_object_un_register_callback_t)(rig_ui_t *ui,
+                                                                  uint64_t id,
+                                                                  void *user_data);
 
-typedef void *(*rig_pb_un_serializer_id_to_objec_callback_t)(uint64_t id,
+typedef void *(*rig_pb_unserializer_id_to_object_callback_t)(rig_ui_t *ui,
+                                                             uint64_t id,
                                                              void *user_data);
 
-typedef rig_asset_t *(*rig_pb_un_serializer_asset_callback_t)(
-    rig_pb_un_serializer_t *unserializer,
+typedef rig_asset_t *(*rig_pb_unserializer_asset_callback_t)(
+    rig_pb_unserializer_t *unserializer,
     Rig__Asset *pb_asset,
     void *user_data);
 
-struct _rig_pb_un_serializer_t {
+struct _rig_pb_unserializer_t {
     rig_engine_t *engine;
 
     rut_memory_stack_t *stack;
 
-    rig_pb_un_serializer_object_register_callback_t object_register_callback;
+    rig_pb_unserializer_object_register_callback_t object_register_callback;
     void *object_register_data;
 
-    rig_pb_un_serializer_object_un_register_callback_t
+    rig_pb_unserializer_object_un_register_callback_t
         object_unregister_callback;
     void *object_unregister_data;
 
-    rig_pb_un_serializer_id_to_objec_callback_t id_to_object_callback;
+    rig_pb_unserializer_id_to_object_callback_t id_to_object_callback;
     void *id_to_object_data;
 
-    rig_pb_un_serializer_asset_callback_t unserialize_asset_callback;
+    rig_pb_unserializer_asset_callback_t unserialize_asset_callback;
     void *unserialize_asset_data;
 
     c_llist_t *assets;
@@ -253,67 +257,70 @@ struct _rig_pb_un_serializer_t {
     c_llist_t *buffers;
 
     c_llist_t *errors;
-
-    c_hash_table_t *id_to_object_map;
 };
 
-rig_pb_un_serializer_t *rig_pb_unserializer_new(rig_engine_t *engine);
+rig_pb_unserializer_t *
+rig_pb_unserializer_new(rig_engine_t *engine,
+                        rig_pb_unserializer_object_register_callback_t register_cb,
+                        rig_pb_unserializer_object_un_register_callback_t unregister_cb,
+                        rig_pb_unserializer_id_to_object_callback_t id_to_obj_cb,
+                        void *user_data);
 
 void rig_pb_unserializer_set_object_register_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_object_register_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_object_register_callback_t callback,
     void *user_data);
 
 void rig_pb_unserializer_set_object_unregister_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_object_un_register_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_object_un_register_callback_t callback,
     void *user_data);
 
 void rig_pb_unserializer_set_id_to_object_callback(
-    rig_pb_un_serializer_t *serializer,
-    rig_pb_un_serializer_id_to_objec_callback_t callback,
+    rig_pb_unserializer_t *serializer,
+    rig_pb_unserializer_id_to_object_callback_t callback,
     void *user_data);
 
 void rig_pb_unserializer_set_asset_unserialize_callback(
-    rig_pb_un_serializer_t *unserializer,
-    rig_pb_un_serializer_asset_callback_t callback,
+    rig_pb_unserializer_t *unserializer,
+    rig_pb_unserializer_asset_callback_t callback,
     void *user_data);
 
-void rig_pb_unserializer_collect_error(rig_pb_un_serializer_t *unserializer,
+void rig_pb_unserializer_collect_error(rig_pb_unserializer_t *unserializer,
                                        const char *format,
                                        ...);
 
-bool rig_pb_unserializer_register_object(rig_pb_un_serializer_t *unserializer,
+bool rig_pb_unserializer_register_object(rig_pb_unserializer_t *unserializer,
                                          void *object,
                                          uint64_t id);
 
-void rig_pb_unserializer_unregister_object(rig_pb_un_serializer_t *unserializer,
+void rig_pb_unserializer_unregister_object(rig_pb_unserializer_t *unserializer,
                                            uint64_t id);
 
-void rig_pb_unserializer_destroy(rig_pb_un_serializer_t *unserializer);
+void rig_pb_unserializer_destroy(rig_pb_unserializer_t *unserializer);
 
-rig_ui_t *rig_pb_unserialize_ui(rig_pb_un_serializer_t *unserializer,
+rig_ui_t *rig_pb_unserialize_ui(rig_pb_unserializer_t *unserializer,
                                 const Rig__UI *pb_ui);
 
 rut_buffer_t *
-rig_pb_unserialize_buffer(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_buffer(rig_pb_unserializer_t *unserializer,
                           Rig__Buffer *pb_buffer);
 
 int
-rig_pb_unserialize_buffers(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_buffers(rig_pb_unserializer_t *unserializer,
                            Rig__Buffer **pb_buffers,
                            rut_buffer_t **buffers,
                            int n_buffers);
 int
-rig_pb_unserialize_attributes(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_attributes(rig_pb_unserializer_t *unserializer,
                               Rig__Attribute **pb_attributes,
                               rut_attribute_t **attributes,
                               int n_attributes);
 
-rut_mesh_t *rig_pb_unserialize_rut_mesh(rig_pb_un_serializer_t *unserializer,
+rut_mesh_t *rig_pb_unserialize_rut_mesh(rig_pb_unserializer_t *unserializer,
                                         Rig__Mesh *pb_mesh);
 
-bool rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
+bool rig_pb_init_boxed_value(rig_pb_unserializer_t *unserializer,
                              rut_boxed_t *boxed,
                              rig_property_type_t type,
                              Rig__PropertyValue *pb_value);
@@ -322,27 +329,27 @@ bool rig_pb_init_boxed_value(rig_pb_un_serializer_t *unserializer,
  * many components can't be configured until they are associated with
  * an entity. */
 rut_object_t *
-rig_pb_unserialize_component(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
                              Rig__Entity__Component *pb_component);
 
-rig_entity_t *rig_pb_unserialize_entity(rig_pb_un_serializer_t *unserializer,
+rig_entity_t *rig_pb_unserialize_entity(rig_pb_unserializer_t *unserializer,
                                         Rig__Entity *pb_entity);
 
 rig_view_t *
-rig_pb_unserialize_view(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_view(rig_pb_unserializer_t *unserializer,
                         Rig__SimpleObject *pb_view);
 
 rig_controller_t *
-rig_pb_unserialize_controller_bare(rig_pb_un_serializer_t *unserializer,
+rig_pb_unserialize_controller_bare(rig_pb_unserializer_t *unserializer,
                                    Rig__Controller *pb_controller);
 
 void rig_pb_unserialize_controller_properties(
-    rig_pb_un_serializer_t *unserializer,
+    rig_pb_unserializer_t *unserializer,
     rig_controller_t *controller,
     int n_properties,
     Rig__Controller__Property **properties);
 
-void rig_pb_unserializer_log_errors(rig_pb_un_serializer_t *unserializer);
-void rig_pb_unserializer_clear_errors(rig_pb_un_serializer_t *unserializer);
+void rig_pb_unserializer_log_errors(rig_pb_unserializer_t *unserializer);
+void rig_pb_unserializer_clear_errors(rig_pb_unserializer_t *unserializer);
 
 #endif /* __RIG_PB_H__ */

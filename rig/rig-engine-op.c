@@ -2160,21 +2160,17 @@ void
 rig_engine_op_apply_context_init(
     rig_engine_op_apply_context_t *ctx,
     rig_engine_t *engine,
-    void (*register_id_cb)(void *object, uint64_t id, void *user_data),
-    void *(*object_lookup_cb)(uint64_t id, void *user_data),
+    void (*register_id_cb)(rig_ui_t *ui, void *object, uint64_t id, void *user_data),
+    void *(*object_lookup_cb)(rig_ui_t *ui, uint64_t id, void *user_data),
     void *user_data)
 {
     ctx->engine = engine;
 
-    ctx->unserializer = rig_pb_unserializer_new(engine);
-
-    rig_pb_unserializer_set_object_register_callback(ctx->unserializer,
-                                                     register_id_cb,
-                                                     user_data);
-    rig_pb_unserializer_set_id_to_object_callback(ctx->unserializer,
-                                                  object_lookup_cb,
-                                                  user_data);
-
+    ctx->unserializer = rig_pb_unserializer_new(engine,
+                                                register_id_cb,
+                                                NULL, /* unregister cb */
+                                                object_lookup_cb,
+                                                user_data);
     ctx->user_data = user_data;
 }
 

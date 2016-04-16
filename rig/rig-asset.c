@@ -267,7 +267,7 @@ asset_new_from_font_data(rig_engine_t *engine,
 }
 
 rig_asset_t *
-rig_asset_new_from_pb_asset(rig_pb_un_serializer_t *unserializer,
+rig_asset_new_from_pb_asset(rig_pb_unserializer_t *unserializer,
                             Rig__Asset *pb_asset,
                             rut_exception_t **e)
 {
