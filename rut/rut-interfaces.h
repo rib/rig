@@ -63,8 +63,8 @@ typedef struct _rut_sizable_vtable_t {
     /* Registers a callback that gets invoked whenever the preferred
      * size of the sizable object changes. The implementation is
      * optional. */
-    rut_closure_t *(*add_preferred_size_callback)(rut_object_t *object,
-                                                  rut_closure_t *closure);
+    void (*add_preferred_size_callback)(rut_object_t *object,
+                                        rut_closure_t *closure);
 } rut_sizable_vtable_t;
 
 void rut_sizable_set_size(rut_object_t *object, float width, float height);
