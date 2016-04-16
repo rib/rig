@@ -147,8 +147,8 @@ struct _rig_source_t {
     } ff_buffered_state[2];
     int ff_decode_buf;
 
-    uv_work_t ff_decode_work;
     bool ff_new_frame;
+    bool ff_decoding;
 #endif
 
 #ifdef USE_GSTREAMER
@@ -182,6 +182,14 @@ typedef struct _source_wrappers_t {
     cg_snippet_t *video_source_vertex_wrapper;
     cg_snippet_t *video_source_fragment_wrapper;
 } source_wrappers_t;
+
+/* To account for not being able cancel in-flight
+ * work, a worker takes a reference on source
+ */
+struct decode_work {
+    uv_work_t req;
+    rig_source_t *source;
+};
 
 static void
 _source_load_progress(rig_source_t *source);
@@ -1173,8 +1181,6 @@ _source_load_progress(rig_source_t *source)
 
 #warning "fixme: missing some ffmpeg cleanup"
 
-        source->ff_decode_work.data = source;
-
         source->timeline = rig_timeline_new(engine, FLT_MAX);
 
         source->type = SOURCE_TYPE_FFMPEG;
@@ -1582,7 +1588,8 @@ rig_source_set_running(rut_object_t *object, bool running)
 static void
 decode_ffmpeg_frame_cb(uv_work_t *req)
 {
-    rig_source_t *source = req->data;
+    struct decode_work *work = req->data;
+    rig_source_t *source = work->source;
     struct ff_buffered_state *buffered_state =
         &source->ff_buffered_state[source->ff_decode_buf];
     AVPacket packet;
@@ -1638,20 +1645,6 @@ decode_ffmpeg_frame_cb(uv_work_t *req)
     buffered_state->width = frame->width;
     buffered_state->height = frame->height;
 
-#if 0
-    if (buffered_state->width != frame->width ||
-        buffered_state->height != frame->height)
-    {
-        av_frame_unref(buffered_state->dst_frame);
-
-        avpicture_fill((AVPicture *)buffered_state->dst_frame,
-                       buffered_state->dst_frame_buf,
-                       AV_PIX_FMT_RGBA,
-                       frame->width,
-                       frame->height);
-    }
-#endif
-
     const uint8_t *rgba_dst_data[] = {
         buffered_state->dst_frame_buf, /* RGBA all in single plane */
         NULL,
@@ -1677,10 +1670,16 @@ decode_ffmpeg_frame_cb(uv_work_t *req)
 static void
 decode_ffmpeg_frame_finished_cb(uv_work_t *req, int status)
 {
-    rig_source_t *source = req->data;
+    struct decode_work *work = req->data;
+    rig_source_t *source = work->source;
 
     source->ff_decode_buf = !source->ff_decode_buf;
+    source->ff_decoding = false;
     source->ff_new_frame = true;
+
+    rut_object_unref(work->source);
+
+    c_free(work);
 }
 
 /* Only called in frontend */
@@ -1694,14 +1693,24 @@ rig_source_prepare_for_frame(rut_object_t *object)
     c_return_if_fail(engine->frontend);
 
     if (source->type == SOURCE_TYPE_FFMPEG) {
-#if 1
-        decode_ffmpeg_frame_cb(&source->ff_decode_work);
-        decode_ffmpeg_frame_finished_cb(&source->ff_decode_work, 0);
+        if (!source->ff_decoding) {
+            struct decode_work *work = c_malloc(sizeof(*work));
+
+            source->ff_decoding = true;
+
+            work->req.data = work;
+            work->source = rut_object_ref(source);
+
+#if 0
+            decode_ffmpeg_frame_cb(&work->req);
+            decode_ffmpeg_frame_finished_cb(&work->req, 0);
 #else
-        uv_queue_work(loop,
-                      &source->ff_decode_work,
-                      decode_ffmpeg_frame_cb,
-                      decode_ffmpeg_frame_finished_cb);
+            uv_queue_work(loop,
+                          &work->req,
+                          decode_ffmpeg_frame_cb,
+                          decode_ffmpeg_frame_finished_cb);
 #endif
+        } else
+            c_warning("Decode pile up");
     }
 }
