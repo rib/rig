@@ -298,58 +298,6 @@ rut_graphable_traverse(rut_object_t *root,
                                              user_data);
 }
 
-#if 0
-static rut_traverse_visit_flags_t
-_rut_graphable_paint_cb (rut_object_t *object,
-                         int depth,
-                         void *user_data)
-{
-    rut_paint_context_t *paint_ctx = user_data;
-    rut_paintable_vtable_t *vtable =
-        rut_object_get_vtable (object, RUT_TRAIT_ID_PAINTABLE);
-
-    vtable->paint (object, paint_ctx);
-
-    return RUT_TRAVERSE_VISIT_CONTINUE;
-}
-
-void
-rut_graphable_paint (rut_object_t *root,
-                     rut_object_t *camera)
-{
-    rut_paint_context_t paint_ctx;
-
-    paint_ctx.camera = camera;
-
-    rut_graphable_traverse (root,
-                            RUT_TRAVERSE_DEPTH_FIRST,
-                            _rut_graphable_paint_cb,
-                            NULL, /* after callback */
-                            &paint_ctx);
-}
-#endif
-
-#if 0
-rut_object_t *
-rut_graphable_find_camera (rut_object_t *object)
-{
-    do {
-        rut_graphable_props_t *graphable_priv;
-
-        if (rut_object_is (object, RUT_TRAIT_ID_CAMERA))
-            return object;
-
-        graphable_priv =
-            rut_object_get_properties (object, RUT_TRAIT_ID_GRAPHABLE);
-
-        object = graphable_priv->parent;
-
-    } while (object);
-
-    return NULL;
-}
-#endif
-
 void
 rut_graphable_apply_transform(rut_object_t *graphable,
                               c_matrix_t *transform_matrix)
