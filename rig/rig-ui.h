@@ -182,6 +182,8 @@ void rig_ui_add_buffer(rig_ui_t *ui, rut_buffer_t *buffer);
 void rig_ui_remove_buffer(rig_ui_t *ui, rut_buffer_t *buffer);
 void rig_ui_reap_buffer(rig_ui_t *ui, rut_buffer_t *buffer);
 
+void rig_ui_start_frame(rig_ui_t *ui);
+
 void rig_ui_register_object(rig_ui_t *ui, rut_object_t *object);
 void rig_ui_unregister_object(rig_ui_t *ui, rut_object_t *object);
 
