@@ -2170,7 +2170,6 @@ rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE: {
         rig_nine_slice_t *nine_slice =
             rig_nine_slice_new(unserializer->engine,
-                               NULL,
                                0,
                                0,
                                0,
