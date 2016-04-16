@@ -41,7 +41,7 @@ typedef enum _rig_pass_t {
 } rig_pass_t;
 
 typedef struct _rig_paint_context_t {
-    rut_paint_context_t _parent;
+    rut_object_t *camera;
 
     rig_engine_t *engine;
     rut_object_t *renderer;

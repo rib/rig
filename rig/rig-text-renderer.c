@@ -659,7 +659,7 @@ draw_wrapped_para(rig_text_renderer_state_t *render_state,
                   hb_position_t baseline_offset,
                   rig_wrapped_paragraph_t *para)
 {
-    cg_framebuffer_t *fb = rut_camera_get_framebuffer(paint_ctx->_parent.camera);
+    cg_framebuffer_t *fb = rut_camera_get_framebuffer(paint_ctx->camera);
     hb_position_t baseline = baseline_offset;
     rig_fixed_run_t *run;
 

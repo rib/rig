@@ -145,7 +145,7 @@ ovr_hmd_paint_eye(rig_camera_view_t *view,
 
     rig_entity_set_camera_view_from_transform(eye->camera);
 
-    rig_paint_ctx->_parent.camera = eye->camera_component;
+    rig_paint_ctx->camera = eye->camera_component;
 
     cg_framebuffer_clear4f(rut_camera_get_framebuffer(eye->camera_component),
                            CG_BUFFER_BIT_COLOR | CG_BUFFER_BIT_DEPTH |
@@ -300,7 +300,7 @@ dummy_hmd_paint_eye(rig_camera_view_t *view,
 
     rig_entity_set_camera_view_from_transform(eye->camera);
 
-    rig_paint_ctx->_parent.camera = eye->camera_component;
+    rig_paint_ctx->camera = eye->camera_component;
 
     if (rut_camera_get_clear(camera_component))
         bg = rut_camera_get_background_color(camera_component);
@@ -396,7 +396,7 @@ rig_camera_view_paint(rig_camera_view_t *view,
     camera = view->camera;
     camera_component = view->camera_component;
 
-    rig_paint_ctx._parent.camera = camera_component;
+    rig_paint_ctx.camera = camera_component;
 
     rig_paint_ctx.engine = view->engine;
     rig_paint_ctx.renderer = renderer;

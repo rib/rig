@@ -54,7 +54,6 @@
 #include "rut-arcball.h"
 #include "rut-util.h"
 #include "rut-geometry.h"
-#include "rut-paintable.h"
 #include "rut-color.h"
 #include "rut-gaussian-blurrer.h"
 #include "rut-mesh.h"
