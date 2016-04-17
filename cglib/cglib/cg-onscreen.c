@@ -147,7 +147,7 @@ _cg_dispatch_onscreen_cb(cg_onscreen_t *onscreen)
      * To make sure this loop will only dispatch one set of events we'll
      * steal the queue and iterate that separately */
     c_list_init(&queue);
-    c_list_insert_list(&queue, &onscreen->events_queue);
+    c_list_prepend_list(&queue, &onscreen->events_queue);
     c_list_init(&onscreen->events_queue);
     onscreen->pending_resize_notify = false;
 
