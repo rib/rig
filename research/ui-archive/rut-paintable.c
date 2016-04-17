@@ -98,7 +98,7 @@ rut_paint_graph_with_layers(rut_object_t *root,
         /* Steal the list so that the widgets can start another layer by
          * adding stuff again */
         c_list_init(&queue);
-        c_list_insert_list(&queue, &paint_ctx->paint_queue);
+        c_list_prepend_list(&queue, &paint_ctx->paint_queue);
         c_list_init(&paint_ctx->paint_queue);
 
         c_list_for_each_safe(node, tmp, &queue, list_node)
