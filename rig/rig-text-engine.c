@@ -1564,7 +1564,7 @@ newline_cb(wrap_state_t *wrap_state)
     }
     c_debug("\n");
 
-    c_list_insert_list(&wrap_state->wrapped_para->fixed_runs,
+    c_list_prepend_list(&wrap_state->wrapped_para->fixed_runs,
                          &wrap_state->unaligned);
     c_list_init(&wrap_state->unaligned);
 

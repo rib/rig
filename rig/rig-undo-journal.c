@@ -1565,7 +1565,7 @@ rig_undo_journal_flush_redos(rig_undo_journal_t *journal)
     c_list_insert(journal->undo_ops.prev, &l->list_node);
     c_list_init(&journal->redo_ops);
 
-    c_list_insert_list(journal->undo_ops.prev, &reversed_operations);
+    c_list_prepend_list(journal->undo_ops.prev, &reversed_operations);
 }
 
 static void

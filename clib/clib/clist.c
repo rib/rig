@@ -78,7 +78,7 @@ c_list_empty(c_list_t *list)
 }
 
 void
-c_list_insert_list(c_list_t *list, c_list_t *other)
+c_list_prepend_list(c_list_t *list, c_list_t *other)
 {
     if (c_list_empty(other))
         return;
@@ -87,4 +87,16 @@ c_list_insert_list(c_list_t *list, c_list_t *other)
     other->prev->next = list->next;
     list->next->prev = other->prev;
     list->next = other->next;
+}
+
+void
+c_list_append_list(c_list_t *list, c_list_t *other)
+{
+    if (c_list_empty(other))
+        return;
+
+    list->prev->next = other->next;
+    other->prev->next = list;
+    other->next->prev = list->prev;
+    list->prev = other->prev;
 }

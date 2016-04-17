@@ -747,7 +747,8 @@ void c_list_insert(c_list_t *list, c_list_t *elm);
 void c_list_remove(c_list_t *elm);
 int c_list_length(c_list_t *list);
 int c_list_empty(c_list_t *list);
-void c_list_insert_list(c_list_t *list, c_list_t *other);
+void c_list_prepend_list(c_list_t *list, c_list_t *other);
+void c_list_append_list(c_list_t *list, c_list_t *other);
 
 /* Only for the cool C programmers... */
 #ifndef __cplusplus
