@@ -3,7 +3,7 @@
  *
  * UI Engine & Editor
  *
- * Copyright (C) 2012  Intel Corporation
+ * Copyright (C) 2015,2016 Robert Bragg
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -53,6 +53,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 #endif
 
 enum source_type
@@ -125,7 +126,8 @@ struct _rig_source_t {
     load_state_t load_state;
 
     bool changed;
-    cg_texture_t *texture;
+    cg_texture_t *textures[3]; /* up to three planes for yuv */
+    int n_textures;
 
 #ifdef USE_FFMPEG
     AVFormatContext *ff_fmt_ctx;
@@ -133,8 +135,15 @@ struct _rig_source_t {
     AVIOContext *ff_avio_ctx;
     int64_t ff_read_pos;
     int ff_video_stream;
+    int ff_audio_stream;
     AVCodecContext *ff_video_codec_ctx;
+    AVCodecContext *ff_audio_codec_ctx;
     struct SwsContext *sws_ctx;
+    c_list_t ff_io_packets;
+    c_list_t ff_queued_audio_packets;
+    c_list_t ff_queued_video_packets;
+
+    SwrContext *audio_swr_ctx;
 
     /* double buffered state, swapped between decode thread
      * and frontend... */
@@ -144,10 +153,13 @@ struct _rig_source_t {
         uint8_t *dst_frame_buf;
         size_t dst_frame_buf_size;
         AVFrame *dst_frame;
+        uint64_t age;
     } ff_buffered_state[2];
     int ff_decode_buf;
+    uint64_t ff_last_buffer_age;
+    uint64_t ff_current_buffer_age;
 
-    bool ff_new_frame;
+    bool ff_reading;
     bool ff_decoding;
 #endif
 
@@ -179,8 +191,11 @@ typedef struct _source_wrappers_t {
     cg_snippet_t *source_vertex_wrapper;
     cg_snippet_t *source_fragment_wrapper;
 
-    cg_snippet_t *video_source_vertex_wrapper;
-    cg_snippet_t *video_source_fragment_wrapper;
+    cg_snippet_t *gst_source_vertex_wrapper;
+    cg_snippet_t *gst_source_fragment_wrapper;
+
+    cg_snippet_t *i420p_source_vertex_wrapper;
+    cg_snippet_t *i420p_source_fragment_wrapper;
 } source_wrappers_t;
 
 /* To account for not being able cancel in-flight
@@ -189,6 +204,16 @@ typedef struct _source_wrappers_t {
 struct decode_work {
     uv_work_t req;
     rig_source_t *source;
+
+    int target_pcm_freq;
+    uint64_t target_pcm_channel_layout;
+    rut_audio_chunk_t *audio_chunk;
+};
+
+struct packet {
+    AVPacket pkt;
+
+    c_list_t link;
 };
 
 static void
@@ -225,10 +250,15 @@ destroy_source_wrapper(void *data)
     if (wrapper->source_vertex_wrapper)
         cg_object_unref(wrapper->source_vertex_wrapper);
 
-    if (wrapper->video_source_vertex_wrapper)
-        cg_object_unref(wrapper->video_source_vertex_wrapper);
-    if (wrapper->video_source_fragment_wrapper)
-        cg_object_unref(wrapper->video_source_fragment_wrapper);
+    if (wrapper->gst_source_vertex_wrapper)
+        cg_object_unref(wrapper->gst_source_vertex_wrapper);
+    if (wrapper->gst_source_fragment_wrapper)
+        cg_object_unref(wrapper->gst_source_fragment_wrapper);
+
+    if (wrapper->i420p_source_vertex_wrapper)
+        cg_object_unref(wrapper->i420p_source_vertex_wrapper);
+    if (wrapper->i420p_source_fragment_wrapper)
+        cg_object_unref(wrapper->i420p_source_fragment_wrapper);
 
     c_slice_free(source_wrappers_t, wrapper);
 }
@@ -388,9 +418,11 @@ _rig_source_free(void *object)
         gst_source_stop(source);
 #endif
 
-    if (source->texture) {
-        cg_object_unref(source->texture);
-        source->texture = NULL;
+    for (int i = 0; i < C_N_ELEMENTS(source->textures); i++) {
+        if (source->textures[i]) {
+            cg_object_unref(source->textures[i]);
+            source->textures[i] = NULL;
+        }
     }
 
     if (source->data)
@@ -450,14 +482,21 @@ _rig_source_init_type(void)
 }
 
 static void
-_source_set_texture(rig_source_t *source, cg_texture_2d_t *texture)
+_source_set_textures(rig_source_t *source,
+                     cg_texture_2d_t **textures,
+                     int n_textures)
 {
-    c_return_if_fail(texture != NULL);
+    c_return_if_fail(n_textures != 0);
+    c_return_if_fail(textures != NULL);
 
-    if (source->texture)
-        cg_object_unref(source->texture);
+    for (int i = 0; i < source->n_textures; i++)
+        cg_object_unref(source->textures[i]);
 
-    source->texture = cg_object_ref(texture);
+    for (int i = 0; i < n_textures; i++)
+        source->textures[i] = cg_object_ref(textures[i]);
+
+    source->n_textures = n_textures;
+
     source->changed = true;
 }
 
@@ -647,9 +686,9 @@ on_webgl_image_load_cb(cg_webgl_image_t *image, void *user_data)
         cg_object_unref(fb);
         cg_object_unref(tex2d);
 
-        _source_set_texture(source, pot_tex);
+        _source_set_textures(source, &pot_tex, 1);
     } else
-        _source_set_texture(source, tex2d);
+        _source_set_textures(source, &tex2d, 1);
 
     state->status = LOAD_STATE_LOADED;
 
@@ -790,7 +829,7 @@ rig_source_new(rig_engine_t *engine,
         rut_shell_t *shell = engine->shell;
 
         /* Until something else is loaded... */
-        _source_set_texture(source, engine->frontend->default_tex2d);
+        _source_set_textures(source, &engine->frontend->default_tex2d, 1);
         rut_poll_shell_add_idle(shell, &source->load_state.load_idle);
     }
 
@@ -1049,7 +1088,7 @@ _source_load_progress(rig_source_t *source)
             return;
         }
 
-        _source_set_texture(source, tex2d);
+        _source_set_textures(source, &tex2d, 1);
         source->type = SOURCE_TYPE_PIXBUF;
         state->status = LOAD_STATE_LOADED
     } else
@@ -1093,6 +1132,8 @@ _source_load_progress(rig_source_t *source)
             state->error = c_strdup("failed to create ffmpeg avformat context");
             return;
         }
+
+        //source->ff_fmt_ctx->flags |= AVFMT_FLAG_GENPTS;
 
         source->ff_avio_buf = av_malloc(4096);
         if (!source->ff_avio_buf) {
@@ -1175,9 +1216,41 @@ _source_load_progress(rig_source_t *source)
             return;
         }
 
+        codec = NULL;
+        source->ff_audio_stream = av_find_best_stream(source->ff_fmt_ctx,
+                                                      AVMEDIA_TYPE_AUDIO,
+                                                      -1, /* auto select stream */
+                                                      -1, /* related stream */
+                                                      &codec, /* decode codec */
+                                                      0); /* flags */
+        if (source->ff_audio_stream < 0) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to find audio stream or codec");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
+        source->ff_audio_codec_ctx =
+            source->ff_fmt_ctx->streams[source->ff_audio_stream]->codec;
+        av_dict_set(&opts, "refcounted_frames", "1", 0);
+
+        ret = avcodec_open2(source->ff_audio_codec_ctx, codec, &opts);
+        if (ret < 0) {
+            state->status = LOAD_STATE_ERROR;
+            state->error = c_strdup("failed to find audio stream or codec");
+
+            cleanup_ffmpeg_state(source);
+            return;
+        }
+
         for (int i = 0; i < 2; i++) {
             source->ff_buffered_state[i].dst_frame = av_frame_alloc();
         }
+
+        c_list_init(&source->ff_io_packets);
+        c_list_init(&source->ff_queued_video_packets);
+        c_list_init(&source->ff_queued_audio_packets);
 
 #warning "fixme: missing some ffmpeg cleanup"
 
@@ -1186,6 +1259,10 @@ _source_load_progress(rig_source_t *source)
         source->type = SOURCE_TYPE_FFMPEG;
         state->status = LOAD_STATE_LOADED;
 
+        source->changed = true;
+
+        rut_closure_list_invoke(
+            &source->ready_cb_list, rig_source_ready_callback_t, source);
     } else
 #endif
 #ifdef USE_GSTREAMER
@@ -1204,14 +1281,8 @@ _source_load_progress(rig_source_t *source)
     {
         c_warning("FIXME: Rig is missing support for '%s' on this platform",
                   source->mime);
-        source->texture = cg_object_ref(frontend->default_tex2d);
+        _source_set_textures(source, &frontend->default_tex2d, 1);
     }
-}
-
-cg_texture_t *
-rig_source_get_texture(rig_source_t *source)
-{
-    return source->texture;
 }
 
 void
@@ -1220,7 +1291,7 @@ rig_source_add_ready_callback(rig_source_t *source,
 {
     rut_closure_list_add(&source->ready_cb_list, closure);
 
-    if (source->texture)
+    if (source->type != SOURCE_TYPE_UNLOADED)
         rut_closure_invoke(closure, rig_source_ready_callback_t, source);
 }
 
@@ -1296,9 +1367,44 @@ get_source_wrappers(rig_frontend_t *frontend,
                               layer_index,
                               layer_index);
 
-    wrappers->video_source_vertex_wrapper =
+    wrappers->gst_source_vertex_wrapper =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX_GLOBALS, wrapper, NULL);
-    wrappers->video_source_fragment_wrapper =
+    wrappers->gst_source_fragment_wrapper =
+        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
+
+    c_free(wrapper);
+
+    wrapper = c_strdup_printf("vec4\n"
+                              "rig_source_sample%d(vec2 UV)\n"
+                              "{\n"
+                              "#if __VERSION__ >= 130\n"
+                              "  float y = 1.1640625 * (texture(cg_sampler%i, UV).a - 0.0625);\n"
+                              "  float u = texture(cg_sampler%i, UV).a - 0.5;\n"
+                              "  float v = texture(cg_sampler%i, UV).a - 0.5;\n"
+                              "#else\n"
+                              "  float y = 1.1640625 * (texture2D(cg_sampler%i, UV).a - 0.0625);\n"
+                              "  float u = texture2D(cg_sampler%i, UV).a - 0.5;\n"
+                              "  float v = texture2D(cg_sampler%i, UV).a - 0.5;\n"
+                              "#endif\n"
+                              "  vec4 color;\n"
+                              "  color.r = y + 1.59765625 * v;\n"
+                              "  color.g = y - 0.390625 * u - 0.8125 * v;\n"
+                              "  color.b = y + 2.015625 * u;\n"
+                              "  color.a = 1.0;\n"
+                              "  return color;\n"
+                              //"  return vec4(1.0, 1.0, 0.0, 1.0);\n"
+                              "}\n",
+                              layer_index,
+                              layer_index,
+                              layer_index + 1,
+                              layer_index + 2,
+                              layer_index,
+                              layer_index + 1,
+                              layer_index + 2);
+
+    wrappers->i420p_source_vertex_wrapper =
+        cg_snippet_new(CG_SNIPPET_HOOK_VERTEX_GLOBALS, wrapper, NULL);
+    wrappers->i420p_source_fragment_wrapper =
         cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
 
     c_free(wrapper);
@@ -1326,50 +1432,112 @@ rig_source_setup_pipeline(rig_source_t *source,
         CgGstVideoSink *sink = gst_source_get_sink(source);
 
         cg_gst_video_sink_set_first_layer(sink, source->first_layer);
-        cg_gst_video_sink_set_default_sample(sink, true);
+        cg_gst_video_sink_set_default_sample(sink, false);
         cg_gst_video_sink_setup_pipeline(sink, pipeline);
 
-        vertex_snippet = wrappers->video_source_vertex_wrapper;
-        fragment_snippet = wrappers->video_source_fragment_wrapper;
+        vertex_snippet = wrappers->gst_source_vertex_wrapper;
+        fragment_snippet = wrappers->gst_source_fragment_wrapper;
+        break;
+    }
+#endif
+
+#ifdef USE_FFMPEG
+    case SOURCE_TYPE_FFMPEG: {
+        /* By default CGlib will automatically sample + modulate all
+         * layers, which may not be what we want...
+         */
+        cg_snippet_t *layer_skip =
+            cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+        cg_snippet_set_replace(layer_skip, "");
+
+        for (int i = 0; i < 3; i++) {
+            cg_pipeline_set_layer_null_texture(pipeline, source->first_layer + i,
+                                               CG_TEXTURE_TYPE_2D);
+            cg_pipeline_add_layer_snippet(pipeline, source->first_layer + i,
+                                          layer_skip);
+        }
+
+        vertex_snippet = wrappers->i420p_source_vertex_wrapper;
+        fragment_snippet = wrappers->i420p_source_fragment_wrapper;
         break;
     }
 #endif
 
     case SOURCE_TYPE_UNLOADED:
-#ifdef USE_FFMPEG
-    case SOURCE_TYPE_FFMPEG:
-#endif
 #ifdef USE_GDK_PIXBUF
     case SOURCE_TYPE_PIXBUF: 
 #endif
     case SOURCE_TYPE_GIF:
     case SOURCE_TYPE_PNG:
     case SOURCE_TYPE_JPG: {
-        cg_texture_t *texture = source->texture;
+        /* By default CGlib will automatically sample + modulate all
+         * layers, which may not be what we want...
+         */
+        cg_snippet_t *layer_skip =
+            cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
+        cg_snippet_set_replace(layer_skip, "");
 
-        //cg_pipeline_set_color4f(pipeline, 0, 1, 0, 1);
-//#warning "debug - source pipeline override"
-#if 1
-        cg_pipeline_set_layer_texture(pipeline, source->first_layer, texture);
+        cg_pipeline_add_layer_snippet(pipeline, source->first_layer, layer_skip);
+        cg_object_unref(layer_skip);
 
-        if (!source->default_sample) {
-            cg_snippet_t *snippet =
-                cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
-            cg_snippet_set_replace(snippet, "");
-            cg_pipeline_add_layer_snippet(pipeline, source->first_layer, snippet);
-            cg_object_unref(snippet);
-        }
+        cg_pipeline_set_layer_null_texture(pipeline, source->first_layer,
+                                           CG_TEXTURE_TYPE_2D);
 
         vertex_snippet = wrappers->source_vertex_wrapper;
         fragment_snippet = wrappers->source_fragment_wrapper;
-#endif
+
         break;
     }
     }
 
-    //cg_pipeline_add_snippet(pipeline, vertex_snippet);
-    //cg_pipeline_add_snippet(pipeline, fragment_snippet);
-#warning "debug - source pipeline override"
+    cg_pipeline_add_snippet(pipeline, vertex_snippet);
+    cg_pipeline_add_snippet(pipeline, fragment_snippet);
+
+    if (source->default_sample) {
+        cg_snippet_t *snippet = NULL;
+        char post[128];
+
+        snprintf(post, sizeof(post),
+                 //"  frag = vec4(0.0, 1.0, 1.0, 1.0);");
+                 "  frag *= rig_source_sample%d(cg_tex_coord%d_in.st);\n",
+                 source->first_layer,
+                 source->first_layer);
+        snippet = cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT,
+                                 NULL, /* pre */
+                                 post);
+        cg_pipeline_add_layer_snippet(pipeline, source->first_layer - 1,
+                                      snippet);
+        cg_object_unref(snippet);
+    }
+}
+
+static cg_texture_2d_t *
+upload_plane(cg_device_t *dev,
+             int width,
+             int height,
+             cg_pixel_format_t format,
+             int rowstride,
+             uint8_t *data)
+{
+    cg_bitmap_t *bmp = cg_bitmap_new_for_data(dev,
+                                              width,
+                                              height,
+                                              format,
+                                              rowstride,
+                                              data);
+    cg_texture_2d_t *tex = cg_texture_2d_new_from_bitmap(bmp);
+    cg_error_t *error = NULL;
+
+    cg_object_unref(bmp);
+
+    if (!cg_texture_allocate(tex, &error)) {
+        c_warning("Failed to upload video plane: %s", error->message);
+        cg_error_free(error);
+        cg_object_unref(tex);
+        tex = NULL;
+    }
+
+    return tex;
 }
 
 void
@@ -1447,57 +1615,71 @@ rig_source_attach_frame(rig_source_t *source,
         cg_object_unref(bmp);
 
         if (cg_texture_allocate(tex, &error))
-            _source_set_texture(source, tex);
+            _source_set_textures(source, &tex, 1);
         else
-            _source_set_texture(source, engine->frontend->default_tex2d);
+            _source_set_textures(source, &engine->frontend->default_tex2d, 1);
 
         cg_pipeline_set_layer_texture(pipeline,
-                                      //0,
                                       source->first_layer,
-                                      source->texture);
+                                      source->textures[0]);
         break;
     }
     case SOURCE_TYPE_FFMPEG: {
         rig_engine_t *engine = rig_component_props_get_engine(&source->component);
-        cg_bitmap_t *bmp;
-        cg_texture_2d_t *tex;
-        cg_error_t *error = NULL;
+        cg_device_t *dev = engine->shell->cg_device;
+        cg_texture_2d_t *planes[3] = { 0 };
         struct ff_buffered_state *buffered_state =
             &source->ff_buffered_state[!source->ff_decode_buf];
+        int y_size = buffered_state->width * buffered_state->height;
+        int u_size = (buffered_state->width/2) * (buffered_state->height/2);
 
-        if (!source->ff_new_frame)
+        if (source->ff_current_buffer_age == buffered_state->age)
             break;
 
-        bmp = cg_bitmap_new_for_data(engine->shell->cg_device,
-                                     buffered_state->width,
-                                     buffered_state->height,
-                                     CG_PIXEL_FORMAT_RGBA_8888,
-                                     0,
-                                     buffered_state->dst_frame_buf);
+        planes[0] = upload_plane(dev,
+                                 buffered_state->width,
+                                 buffered_state->height,
+                                 CG_PIXEL_FORMAT_A_8,
+                                 buffered_state->width,
+                                 buffered_state->dst_frame_buf);
+        planes[1] = upload_plane(dev,
+                                 buffered_state->width / 2,
+                                 buffered_state->height / 2,
+                                 CG_PIXEL_FORMAT_A_8,
+                                 buffered_state->width / 2,
+                                 buffered_state->dst_frame_buf + y_size);
+        planes[2] = upload_plane(dev,
+                                 buffered_state->width / 2,
+                                 buffered_state->height / 2,
+                                 CG_PIXEL_FORMAT_A_8,
+                                 buffered_state->width / 2,
+                                 buffered_state->dst_frame_buf + y_size + u_size);
 
-        tex = cg_texture_2d_new_from_bitmap(bmp);
-        cg_object_unref(bmp);
+        if (planes[0] && planes[1] && planes[2]) {
+            _source_set_textures(source, planes, 3);
+        } else
+            _source_set_textures(source, &engine->frontend->default_tex2d, 1);
 
-        if (cg_texture_allocate(tex, &error))
-            _source_set_texture(source, tex);
-        else
-            _source_set_texture(source, engine->frontend->default_tex2d);
+        for (int i = 0; i < 3; i++) {
+            if (planes[i]) /* there might have been an error */
+                cg_object_unref(planes[i]);
+        }
 
-        cg_pipeline_set_layer_texture(pipeline,
-                                      //0,
-                                      source->first_layer,
-                                      source->texture);
+        for (int i = 0; i < source->n_textures; i++) {
+            cg_pipeline_set_layer_texture(pipeline,
+                                          source->first_layer + i,
+                                          source->textures[i]);
+        }
 
-        cg_object_unref(tex); /* ref taken by pipeline */
-
-        source->ff_new_frame = false;
-
+        source->ff_current_buffer_age = buffered_state->age;
         break;
     }
     default:
-        cg_pipeline_set_layer_texture(pipeline,
-                                      source->first_layer,
-                                      source->texture);
+        for (int i = 0; i < source->n_textures; i++) {
+            cg_pipeline_set_layer_texture(pipeline,
+                                          source->first_layer + i,
+                                          source->textures[i]);
+        }
         break;
     }
 }
@@ -1517,9 +1699,9 @@ rig_source_get_natural_size(rig_source_t *source,
         break;
 #endif
     default:
-        if (source->texture) {
-            *width = cg_texture_get_width(source->texture);
-            *height = cg_texture_get_height(source->texture);
+        if (source->textures[0]) {
+            *width = cg_texture_get_width(source->textures[0]);
+            *height = cg_texture_get_height(source->textures[0]);
         }
     }
 }
@@ -1585,86 +1767,227 @@ rig_source_set_running(rut_object_t *object, bool running)
                        &source->properties[RIG_SOURCE_PROP_RUNNING]);
 }
 
+static bool
+decode_codec_frame(AVCodecContext *ctx,
+                   AVFrame *frame,
+                   c_list_t *queued_packets,
+                   int (*decode_cb)(AVCodecContext *ctx,
+                                    AVFrame *frame,
+                                    int *got_frame,
+                                    const AVPacket *pkt))
+{
+    struct packet *packet, *tmp;
+    int decoded_frame = 0;
+
+    c_list_for_each_safe(packet, tmp, queued_packets, link) {
+#if 1
+        while (packet->pkt.size) {
+            int ret = decode_cb(ctx, frame, &decoded_frame, &packet->pkt);
+            if (ret < 0) {
+                c_warning("Failed to decode frame %s", av_err2str(ret));
+                packet->pkt.size = 0;
+                break;
+            } else {
+                packet->pkt.size -= ret;
+                packet->pkt.data += ret;
+            }
+
+            if (packet->pkt.size <= 0) {
+                c_list_remove(&packet->link);
+                av_packet_unref(&packet->pkt);
+                c_free(packet);
+            }
+
+            if (decoded_frame)
+                return true;
+        }
+#else
+        av_packet_unref(&packet->pkt);
+        c_free(packet);
+#endif
+    }
+
+    return false;
+}
+
+static void
+decode_ffmpeg_video(struct decode_work *work)
+{
+    rig_source_t *source = work->source;
+    AVFrame *video_frame = NULL;
+    struct ff_buffered_state *buffered_state =
+        &source->ff_buffered_state[source->ff_decode_buf];
+
+    video_frame = av_frame_alloc();
+    if (!video_frame) {
+        c_warning("failed to allocate ffmpeg video frame");
+        goto exit;
+    }
+
+    if (decode_codec_frame(source->ff_video_codec_ctx,
+                           video_frame,
+                           &source->ff_queued_video_packets,
+                           avcodec_decode_video2))
+    {
+        int y_size = video_frame->width * video_frame->height;
+        int u_size = (video_frame->width/2) * (video_frame->height/2);
+        int dst_size;
+
+        source->sws_ctx = sws_getCachedContext(source->sws_ctx,
+                                               video_frame->width,
+                                               video_frame->height,
+                                               video_frame->format,
+                                               video_frame->width,
+                                               video_frame->height,
+                                               AV_PIX_FMT_YUV420P,
+                                               SWS_BICUBIC, /* flags */
+                                               NULL, /* src filter */
+                                               NULL, /* dst filter */
+                                               NULL); /* param */
+
+        dst_size = y_size + 2 * u_size;
+        if (dst_size > buffered_state->dst_frame_buf_size) {
+            av_freep(&buffered_state->dst_frame_buf);
+            buffered_state->dst_frame_buf = av_malloc(dst_size);
+            buffered_state->dst_frame_buf_size = dst_size;
+        }
+
+        buffered_state->width = video_frame->width;
+        buffered_state->height = video_frame->height;
+
+        uint8_t * const dst_data[] = {
+            buffered_state->dst_frame_buf, /* Y */
+            buffered_state->dst_frame_buf + y_size, /* U */
+            buffered_state->dst_frame_buf + y_size + u_size, /* V */
+            NULL
+        };
+        int dst_strides[] = {
+            video_frame->width,
+            video_frame->width / 2,
+            video_frame->width / 2,
+            0
+        };
+
+        sws_scale(source->sws_ctx,
+                  (const uint8_t * const *)video_frame->data, /* src slice */
+                  video_frame->linesize, /* src stride */
+                  0, /* src slice Y */
+                  video_frame->height, /* src slice H */
+                  dst_data,
+                  dst_strides);
+
+        buffered_state->age = source->ff_last_buffer_age++;
+    }
+
+exit:
+    if (video_frame)
+        av_frame_free(&video_frame);
+
+}
+
+static void
+decode_ffmpeg_audio(struct decode_work *work)
+{
+    rig_source_t *source = work->source;
+    AVFrame *audio_frame = NULL;
+    /* A confusing mix of term 'frame' here. An ffmpeg audio frame may
+     * contain more than one sample per-channel (Alsa/chunk frames). */
+    int max_audio_samples = work->audio_chunk->n_frames;
+    int n_samples = 0;
+
+    audio_frame = av_frame_alloc();
+    if (!audio_frame) {
+        c_warning("failed to allocate ffmpeg audio frame");
+        goto exit;
+    }
+
+#warning "support decoding audio until some buffering threshold"
+    while (!c_list_empty(&source->ff_queued_audio_packets)) {
+        if (!decode_codec_frame(source->ff_audio_codec_ctx,
+                                audio_frame,
+                                &source->ff_queued_audio_packets,
+                                avcodec_decode_audio4))
+            continue;
+
+        /* FIXME: check whether any of the options that affect the
+         * swr ctx have changed and update ctx if necessary...
+         */
+#warning "invalidate swr resample ctx on freq/channel-layout/format change"
+        if (!source->audio_swr_ctx) {
+            /* FIXME: should have something like a rut_audio_output_t
+             * to refer to here...
+             *
+             * XXX: when we support building a graph of audio
+             * processing nodes, each node should be able to see what
+             * the downstream layout needs to be.
+             */
+            source->audio_swr_ctx =
+                swr_alloc_set_opts(NULL, /* swr ctx */
+                                   work->target_pcm_channel_layout,
+                                   AV_SAMPLE_FMT_S16,
+                                   work->target_pcm_freq,
+                                   audio_frame->channel_layout, /* XXX: ffplay doesn't
+                                                                   always trust this :-/
+                                                                 */
+                                   audio_frame->format,
+                                   audio_frame->sample_rate,
+                                   0, /* log offset */
+                                   NULL); /* log context */
+            if (source->audio_swr_ctx == NULL ||
+                swr_init(source->audio_swr_ctx) < 0)
+            {
+                c_warning("Failed to create audio resampler context");
+            }
+        }
+
+#warning "don't assume s16 output format"
+        if (source->audio_swr_ctx) {
+            rut_audio_chunk_t *chunk = work->audio_chunk;
+
+            /* NB: A 'sample' for swr here is counted per-channel
+             * (like an Alsa 'frame') */
+            int max_out_samples = max_audio_samples - n_samples;
+            int n_out;
+            /* FIXME: don't assume 2 channels @ 2bytes per sample... */
+            uint8_t *out = chunk->data + n_samples * 2 * 2;
+#if 0
+            rig_engine_t *engine = rig_component_props_get_engine(&source->component);
+            rut_shell_t *shell = engine->shell;
+
+            rut_debug_generate_sine_audio(shell, chunk);
+#else
+            n_out = swr_convert(source->audio_swr_ctx,
+                                &out,
+                                max_out_samples,
+                                (const uint8_t **)audio_frame->extended_data,
+                                audio_frame->nb_samples);
+            if (n_out < 0) {
+                c_warning("Failed to resample audio: %s", av_err2str(n_out));
+                break;
+            } else
+                n_samples += n_out;
+#endif
+        }
+
+         if (n_samples == max_audio_samples)
+             break;
+    }
+
+    work->audio_chunk->n_frames = n_samples;
+
+exit:
+
+    if (audio_frame)
+        av_frame_free(&audio_frame);
+}
+
 static void
 decode_ffmpeg_frame_cb(uv_work_t *req)
 {
     struct decode_work *work = req->data;
-    rig_source_t *source = work->source;
-    struct ff_buffered_state *buffered_state =
-        &source->ff_buffered_state[source->ff_decode_buf];
-    AVPacket packet;
-    int frame_ready = false;
-    int dst_size;
 
-    AVFrame *frame = av_frame_alloc();
-    if (!frame) {
-        c_warning("failed to allocate ffmpeg frame");
-        return;
-    }
-
-    while (!frame_ready) {
-        int ret = av_read_frame(source->ff_fmt_ctx, &packet);
-        if (ret < 0) {
-            if (ret == AVERROR_EOF)
-                c_warning("video EOF");
-            else
-                c_warning("video ");
-            break;
-        }
-
-        if (packet.stream_index != source->ff_video_stream)
-            continue;
-
-        avcodec_decode_video2(source->ff_video_codec_ctx,
-                              frame,
-                              &frame_ready,
-                              &packet);
-
-        av_packet_unref(&packet);
-    }
-
-    source->sws_ctx = sws_getCachedContext(source->sws_ctx,
-                                           frame->width,
-                                           frame->height,
-                                           frame->format,
-                                           frame->width,
-                                           frame->height,
-                                           AV_PIX_FMT_RGBA,
-                                           SWS_BICUBIC, /* flags */
-                                           NULL, /* src filter */
-                                           NULL, /* dst filter */
-                                           NULL); /* param */
-
-    dst_size = frame->width * frame->height * 4;
-    if (dst_size > buffered_state->dst_frame_buf_size) {
-        av_freep(&buffered_state->dst_frame_buf);
-        buffered_state->dst_frame_buf = av_malloc(dst_size);
-        buffered_state->dst_frame_buf_size = dst_size;
-    }
-
-    buffered_state->width = frame->width;
-    buffered_state->height = frame->height;
-
-    const uint8_t *rgba_dst_data[] = {
-        buffered_state->dst_frame_buf, /* RGBA all in single plane */
-        NULL,
-        NULL,
-        NULL
-    };
-    int rgba_dst_strides[] = {
-        frame->width * 4,
-        0,
-        0,
-        0
-    };
-
-    sws_scale(source->sws_ctx,
-              frame->data, /* src slice */
-              frame->linesize, /* src stride */
-              0, /* src slice Y */
-              frame->height, /* src slice H */
-              rgba_dst_data,
-              rgba_dst_strides);
+    decode_ffmpeg_video(work);
+    decode_ffmpeg_audio(work);
 }
 
 static void
@@ -1672,13 +1995,64 @@ decode_ffmpeg_frame_finished_cb(uv_work_t *req, int status)
 {
     struct decode_work *work = req->data;
     rig_source_t *source = work->source;
+    rig_engine_t *engine = rig_component_props_get_engine(&source->component);
 
     source->ff_decode_buf = !source->ff_decode_buf;
     source->ff_decoding = false;
-    source->ff_new_frame = true;
+
+    rut_shell_queue_audio_chunk(engine->shell, work->audio_chunk);
+    rut_object_unref(work->audio_chunk);
 
     rut_object_unref(work->source);
 
+    c_free(work);
+}
+
+struct io_work {
+    uv_work_t req;
+
+    c_list_t packets;
+
+    rut_object_t *source;
+};
+
+static void
+read_ffmpeg_packets_cb(uv_work_t *req)
+{
+    struct io_work *work = req->data;
+    rig_source_t *source = work->source;
+
+    /* XXX: fix metric for how many packets to read
+     * before breaking. */
+    for (int i = 0; i < 20; i++) {
+        struct packet *packet = c_new0(struct packet, 1);
+        int ret;
+
+        ret = av_read_frame(source->ff_fmt_ctx, &packet->pkt);
+        if (ret < 0) {
+            if (ret == AVERROR_EOF)
+                c_warning("video EOF");
+            else
+                c_warning("video ");
+            c_free(packet);
+            break;
+        }
+
+        c_list_insert(work->packets.prev, &packet->link);
+    }
+}
+
+static void
+read_ffmpeg_packets_finished_cb(uv_work_t *req, int status)
+{
+    struct io_work *work = req->data;
+    rig_source_t *source = work->source;
+
+    c_list_append_list(&source->ff_io_packets, &work->packets);
+
+    source->ff_reading = false;
+
+    rut_object_unref(source);
     c_free(work);
 }
 
@@ -1692,15 +2066,68 @@ rig_source_prepare_for_frame(rut_object_t *object)
 
     c_return_if_fail(engine->frontend);
 
+#if 0
+    {
+        rut_audio_chunk_t *chunk = rut_audio_chunk_new(engine->shell);
+        rut_shell_queue_audio_chunk(engine->shell, chunk);
+        rut_object_unref(chunk);
+        return;
+    }
+#endif
+
     if (source->type == SOURCE_TYPE_FFMPEG) {
-        if (!source->ff_decoding) {
+        if (!source->ff_reading) {
+            struct io_work *work = c_malloc(sizeof(*work));
+
+            source->ff_reading = true;
+
+            work->req.data = work;
+            work->source = rut_object_ref(source);
+            c_list_init(&work->packets);
+
+            /* Uncomment for synchronous read, for debugging... */
+#if 0
+            read_ffmpeg_packets_cb(&work->req);
+            read_ffmpeg_packets_finished_cb(&work->req, 0);
+#else
+            uv_queue_work(loop,
+                          &work->req,
+                          read_ffmpeg_packets_cb,
+                          read_ffmpeg_packets_finished_cb);
+#endif
+        } else
+            c_warning("ffmpeg read pile up");
+
+        if (!source->ff_decoding && !c_list_empty(&source->ff_io_packets)) {
             struct decode_work *work = c_malloc(sizeof(*work));
+            struct packet *packet, *tmp;
 
             source->ff_decoding = true;
 
             work->req.data = work;
             work->source = rut_object_ref(source);
 
+            /* FIXME: hack */
+            work->audio_chunk = rut_audio_chunk_new(engine->shell);
+            work->target_pcm_freq = engine->shell->pcm_freq;
+            work->target_pcm_channel_layout =
+                av_get_default_channel_layout(engine->shell->pcm_n_channels);
+
+            /* filter packets into per-stream queues... */
+            c_list_for_each_safe(packet, tmp, &source->ff_io_packets, link) {
+                c_list_remove(&packet->link);
+
+                if (packet->pkt.stream_index == source->ff_video_stream) {
+                    c_list_insert(source->ff_queued_video_packets.prev, &packet->link);
+                } else if (packet->pkt.stream_index == source->ff_audio_stream) {
+                    c_list_insert(source->ff_queued_audio_packets.prev, &packet->link);
+                } else {
+                    av_packet_unref(&packet->pkt);
+                    c_free(packet);
+                }
+            }
+
+            /* Uncomment for synchronous decode, for debugging... */
 #if 0
             decode_ffmpeg_frame_cb(&work->req);
             decode_ffmpeg_frame_finished_cb(&work->req, 0);
