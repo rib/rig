@@ -78,7 +78,7 @@ c_list_empty(c_list_t *list)
 }
 
 void
-c_list_insert_list(c_list_t *list, c_list_t *other)
+c_list_prepend_list(c_list_t *list, c_list_t *other)
 {
     if (c_list_empty(other))
         return;
