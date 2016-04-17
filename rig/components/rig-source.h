@@ -49,8 +49,6 @@ rig_source_new(rig_engine_t *engine,
                int natural_width,
                int natural_height);
 
-cg_texture_t *rig_source_get_texture(rig_source_t *source);
-
 typedef void (*rig_source_ready_callback_t)(rig_source_t *source,
                                             void *user_data);
 
