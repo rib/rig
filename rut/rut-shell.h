@@ -45,6 +45,10 @@
 #include <xkbcommon/xkbcommon-compose.h>
 #endif
 
+#ifdef USE_ALSA
+#include <alsa/asoundlib.h>
+#endif
+
 #ifdef USE_UV
 #include <uv.h>
 #endif
@@ -289,6 +293,47 @@ struct rut_mod_index_mapping
 };
 #endif
 
+typedef enum {
+    RUT_CHANNEL_FORMAT_S16_LE,
+    RUT_CHANNEL_FORMAT_S16_BE,
+    RUT_CHANNEL_FORMAT_S16_SYS,
+    RUT_CHANNEL_FORMAT_U16_LE,
+    RUT_CHANNEL_FORMAT_U16_BE,
+    RUT_CHANNEL_FORMAT_U16_SYS,
+    RUT_CHANNEL_FORMAT_S32_LE,
+    RUT_CHANNEL_FORMAT_S32_BE,
+    RUT_CHANNEL_FORMAT_S32_SYS,
+    RUT_CHANNEL_FORMAT_U32_LE,
+    RUT_CHANNEL_FORMAT_U32_BE,
+    RUT_CHANNEL_FORMAT_U32_SYS,
+    RUT_CHANNEL_FORMAT_F32_LE,
+    RUT_CHANNEL_FORMAT_F32_BE,
+    RUT_CHANNEL_FORMAT_F32_SYS,
+} rut_channel_format_t;
+
+typedef enum {
+    RUT_CHANNEL_TYPE_LEFT,
+    RUT_CHANNEL_TYPE_RIGHT,
+} rut_channel_type_t;
+
+typedef struct {
+    int offset;
+    size_t stride;
+    rut_channel_format_t format;
+    rut_channel_type_t type;
+} rut_channel_layout_t;
+
+typedef struct {
+    rut_object_base_t _base;
+
+    c_list_t link;
+    rut_channel_layout_t *channels;
+    int n_channels;
+    int n_frames;
+    uint8_t *data;
+    int data_len;
+} rut_audio_chunk_t;
+
 struct _rut_shell_t {
     rut_object_base_t _base;
 
@@ -357,6 +402,24 @@ struct _rut_shell_t {
     int x11_keysyms_per_keycode;
 #endif
 #endif
+
+#ifdef USE_ALSA
+    snd_pcm_uframes_t pcm_period_n_frames;
+    snd_pcm_uframes_t pcm_buffer_n_frames;
+    unsigned int pcm_freq;
+    snd_pcm_t *pcm;
+    uint8_t *pcm_buf;
+    struct pollfd *pcm_pollfds;
+    rut_poll_source_t **pcm_event_sources;
+    int pcm_n_pollfds;
+    snd_pcm_status_t *pcm_status;
+    rut_channel_layout_t *pcm_channel_layouts;
+    int pcm_n_channels;
+#endif
+
+    c_mutex_t pcm_chunk_mutex;
+    c_list_t pcm_chunk_queue;
+    c_list_t pcm_chunk_reuse_queue;
 
 #ifdef __ANDROID__
     struct android_app *android_application;
@@ -516,6 +579,8 @@ struct _rut_shell_t {
         const char *(*text_event_get_text)(rut_input_event_t *event);
 
         void (*free_input_event)(rut_input_event_t *event);
+
+        void (*audio_chunk_init)(rut_shell_t *shell, rut_audio_chunk_t *chunk);
 
         void (*cleanup)(rut_shell_t *shell);
     } platform;
@@ -861,6 +926,17 @@ void rut_shell_set_assets_location(rut_shell_t *shell,
                                    const char *assets_location);
 
 char *rut_find_data_file(const char *base_filename);
+
+rut_audio_chunk_t *
+rut_audio_chunk_new(rut_shell_t *shell);
+
+void
+rut_debug_generate_sine_audio(rut_shell_t *shell,
+                              rut_audio_chunk_t *chunk);
+
+void
+rut_shell_queue_audio_chunk(rut_shell_t *shell,
+                            rut_audio_chunk_t *chunk);
 
 void rut_init(void);
 
