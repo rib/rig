@@ -27,8 +27,7 @@
  *
  */
 
-#ifndef _RUT_X11_SHELL_H_
-#define _RUT_X11_SHELL_H_
+#pragma once
 
 #include "rut-shell.h"
 
@@ -65,5 +64,3 @@ rut_x11_shell_init(rut_shell_t *shell);
 
 void
 rut_x11_shell_handle_x11_event(rut_shell_t *shell, XEvent *xevent);
-
-#endif /* _RUT_X11_SHELL_H_ */
