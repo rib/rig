@@ -64,6 +64,9 @@
 #ifdef __EMSCRIPTEN__
 #include "rut-emscripten-shell.h"
 #endif
+#ifdef USE_ALSA
+#include "rut-alsa-shell.h"
+#endif
 
 #ifdef USE_GSTREAMER
 #include "gstmemsrc.h"
@@ -418,6 +421,8 @@ rut_shell_new(rut_shell_t *main_shell,
     c_list_init(&shell->grabs);
     c_list_init(&shell->input_cb_list);
     c_list_init(&shell->onscreens);
+    c_list_init(&shell->pcm_chunk_queue);
+    c_mutex_init(&shell->pcm_chunk_mutex);
 
     _rut_matrix_entry_identity_init(&shell->identity_entry);
 
@@ -558,6 +563,12 @@ _rut_shell_init(rut_shell_t *shell)
 #ifdef USE_UV
         rut_poll_shell_integrate_cg_events_via_libuv(shell);
 #endif
+
+        /* Audio... */
+#ifdef USE_ALSA
+        rut_alsa_shell_init(shell);
+#endif
+
 
         shell->nine_slice_indices =
             cg_indices_new(shell->cg_device,
@@ -1477,6 +1488,42 @@ rut_find_data_file(const char *base_filename)
     }
 
     return NULL;
+}
+
+static void
+_rut_audio_chunk_free(void *object)
+{
+    rut_audio_chunk_t *audio_chunk = object;
+
+    rut_object_free(rut_audio_chunk_t, audio_chunk);
+}
+
+rut_type_t rut_audio_chunk_type;
+
+static void
+_rut_audio_chunk_init_type(void)
+{
+    rut_type_init(&rut_audio_chunk_type, "rut_audio_chunk_t", _rut_audio_chunk_free);
+}
+
+rut_audio_chunk_t *
+rut_audio_chunk_new(rut_shell_t *shell)
+{
+    rut_audio_chunk_t *chunk =
+        rut_object_alloc0(rut_audio_chunk_t, &rut_audio_chunk_type,
+                          _rut_audio_chunk_init_type);
+
+    shell->platform.audio_chunk_init(shell, chunk);
+
+    return chunk;
+}
+
+void
+rut_shell_queue_audio_chunk(rut_shell_t *shell,
+                            rut_audio_chunk_t *chunk)
+{
+    c_list_insert(shell->pcm_chunk_queue.prev, &chunk->link);
+    rut_object_ref(chunk);
 }
 
 void

@@ -1026,6 +1026,13 @@
             'LibOVR/Src'
           ]
         }],
+        [ 'enable_alsa==1', {
+          'defines': [ 'USE_ALSA=1' ],
+          'sources': [
+            'rut/rut-alsa-shell.h',
+            'rut/rut-alsa-shell.c',
+          ]
+        }],
         [ 'enable_ncurses==1', {
           'sources': [
             'rig/rig-curses-debug.h',
