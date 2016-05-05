@@ -201,8 +201,8 @@ message Entity
 {
   message Component
     {
-      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MESH=5;
-          TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10;
+      enum Type { LIGHT=1; MATERIAL=2; MESH=5;
+          TEXT=6; CAMERA=7; NINE_SLICE=9;
           BUTTON_INPUT=11; NATIVE_MODULE=12; SOURCE=13; }
 
       optional sint64 id=1; //XXX ID

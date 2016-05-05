@@ -35,7 +35,6 @@
 #include "rig-entity-inlines.h"
 #include "rig-material.h"
 #include "rig-source.h"
-#include "rig-pointalism-grid.h"
 
 static rig_property_spec_t _rig_material_prop_specs[] = {
     { .name = "visible",
@@ -522,28 +521,6 @@ rig_material_flush_uniforms(rig_material_t *material,
         pipeline, location, material->alpha_mask_threshold);
 
     geo = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
-
-    /* FIXME: materials shouldn't have any special understanding of
-     * pointalism grids; this should be moved to the renderer */
-    if (rut_object_get_type(geo) == &rig_pointalism_grid_type &&
-        material->color_source)
-    {
-        int scale, z;
-        scale = rig_pointalism_grid_get_scale(geo);
-        z = rig_pointalism_grid_get_z(geo);
-
-        location = cg_pipeline_get_uniform_location(pipeline, "scale_factor");
-        cg_pipeline_set_uniform_1f(pipeline, location, scale);
-
-        location = cg_pipeline_get_uniform_location(pipeline, "z_trans");
-        cg_pipeline_set_uniform_1f(pipeline, location, z);
-
-        location = cg_pipeline_get_uniform_location(pipeline, "anti_scale");
-        if (rig_pointalism_grid_get_lighter(geo))
-            cg_pipeline_set_uniform_1i(pipeline, location, 1);
-        else
-            cg_pipeline_set_uniform_1i(pipeline, location, 0);
-    }
 
     material->uniforms_flush_age = material->uniforms_age;
 }

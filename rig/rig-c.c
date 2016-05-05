@@ -36,10 +36,7 @@
 #include "rig-curses-debug.h"
 #include "rig-entity.h"
 
-#include "components/rig-shape.h"
 #include "components/rig-nine-slice.h"
-#include "components/rig-diamond.h"
-#include "components/rig-pointalism-grid.h"
 #include "components/rig-material.h"
 #include "components/rig-button-input.h"
 #include "components/rig-text.h"
@@ -517,26 +514,6 @@ r_light_new(RModule *module)
 }
 
 RObject *
-r_shape_new(RModule *module, float width, float height)
-{
-    rig_code_module_props_t *code_module = (void *)module;
-    rig_engine_t *engine = code_module->engine;
-    rig_property_context_t *prop_ctx = engine->property_ctx;
-    rut_object_t *component;
-
-    prop_ctx->logging_disabled++;
-    component = rig_shape_new(code_module->engine, false, width, height);
-    prop_ctx->logging_disabled--;
-
-    rut_object_claim(component, engine);
-    rut_object_unref(component);
-
-    rig_engine_op_register_component(engine, component);
-
-    return (RObject *)component;
-}
-
-RObject *
 r_nine_slice_new(RModule *module,
                  float top, float right, float bottom, float left,
                  float width, float height)
@@ -550,46 +527,6 @@ r_nine_slice_new(RModule *module,
     component = rig_nine_slice_new(engine,
                                    top, right, bottom, left,
                                    width, right);
-    prop_ctx->logging_disabled--;
-
-    rut_object_claim(component, engine);
-    rut_object_unref(component);
-
-    rig_engine_op_register_component(engine, component);
-
-    return (RObject *)component;
-}
-
-RObject *
-r_diamond_new(RModule *module, float size)
-{
-    rig_code_module_props_t *code_module = (void *)module;
-    rig_engine_t *engine = code_module->engine;
-    rig_property_context_t *prop_ctx = engine->property_ctx;
-    rut_object_t *component;
-
-    prop_ctx->logging_disabled++;
-    component = rig_diamond_new(engine, size);
-    prop_ctx->logging_disabled--;
-
-    rut_object_claim(component, engine);
-    rut_object_unref(component);
-
-    rig_engine_op_register_component(engine, component);
-
-    return (RObject *)component;
-}
-
-RObject *
-r_pointalism_grid_new(RModule *module, float size)
-{
-    rig_code_module_props_t *code_module = (void *)module;
-    rig_engine_t *engine = code_module->engine;
-    rig_property_context_t *prop_ctx = engine->property_ctx;
-    rut_object_t *component;
-
-    prop_ctx->logging_disabled++;
-    component = rig_pointalism_grid_new(engine, size);
     prop_ctx->logging_disabled--;
 
     rut_object_claim(component, engine);

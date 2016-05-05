@@ -39,13 +39,10 @@
 
 #include "components/rig-button-input.h"
 #include "components/rig-camera.h"
-#include "components/rig-diamond.h"
 #include "components/rig-light.h"
 #include "components/rig-material.h"
 #include "components/rig-mesh.h"
 #include "components/rig-nine-slice.h"
-#include "components/rig-pointalism-grid.h"
-#include "components/rig-shape.h"
 #include "components/rig-text.h"
 
 #ifdef USE_UV
@@ -714,24 +711,6 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
                                              serializer);
     } else if (type == &rig_source_type) {
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SOURCE;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_shape_type) {
-        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_diamond_type) {
-        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__DIAMOND;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_pointalism_grid_type) {
-        pb_component->type = RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID;
         serialize_instrospectable_properties(component,
                                              &pb_component->n_properties,
                                              (void **)&pb_component->properties,
@@ -2149,24 +2128,6 @@ rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
         return NULL;
 #endif
     }
-    case RIG__ENTITY__COMPONENT__TYPE__SHAPE: {
-        rig_shape_t *shape = rig_shape_new(unserializer->engine,
-                                           false, /* shaped */
-                                           100, /* width */
-                                           100); /* height */
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            shape,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, shape, component_id)) {
-            rut_object_unref(shape);
-            shape = NULL;
-        }
-
-        return shape;
-    }
     case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE: {
         rig_nine_slice_t *nine_slice =
             rig_nine_slice_new(unserializer->engine,
@@ -2189,43 +2150,6 @@ rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
         }
 
         return nine_slice;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__DIAMOND: {
-        rig_diamond_t *diamond = rig_diamond_new(unserializer->engine,
-                                                 100);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            diamond,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, diamond,
-                                                 component_id))
-        {
-            rut_object_unref(diamond);
-            diamond = NULL;
-        }
-
-        return diamond;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID: {
-        rig_pointalism_grid_t *grid =
-            rig_pointalism_grid_new(unserializer->engine,
-                                    20); /* cell size */
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            grid,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, grid,
-                                                 component_id))
-        {
-            rut_object_unref(grid);
-            grid = NULL;
-        }
-
-        return grid;
     }
     }
 
