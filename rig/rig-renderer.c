@@ -40,14 +40,11 @@
 #include "rig-text-renderer.h"
 
 #include "components/rig-camera.h"
-#include "components/rig-diamond.h"
 #include "components/rig-light.h"
 #include "components/rig-material.h"
 #include "components/rig-source.h"
 #include "components/rig-mesh.h"
 #include "components/rig-nine-slice.h"
-#include "components/rig-pointalism-grid.h"
-#include "components/rig-shape.h"
 #include "components/rig-text.h"
 
 #define GLSL(SRC...) #SRC
@@ -65,7 +62,6 @@ struct _rig_renderer_t {
 
     cg_pipeline_t *dof_pipeline_template;
     cg_pipeline_t *dof_pipeline;
-    cg_pipeline_t *dof_diamond_pipeline;
     cg_pipeline_t *dof_unshaped_pipeline;
 
     rig_depth_of_field_t *dof;
@@ -86,10 +82,6 @@ struct _rig_renderer_t {
     cg_snippet_t *material_lighting_snippet;
     cg_snippet_t *simple_lighting_snippet;
     cg_snippet_t *shadow_mapping_fragment_snippet;
-    cg_snippet_t *pointalism_vertex_snippet;
-    cg_snippet_t *pointalism_video_snippet;
-    cg_snippet_t *pointalism_halo_snippet;
-    cg_snippet_t *pointalism_opaque_snippet;
     cg_snippet_t *cache_position_snippet;
     cg_snippet_t *layer_skip_snippet;
 
@@ -548,33 +540,6 @@ init_dof_pipeline_template(rig_renderer_t *renderer)
 }
 
 static void
-init_dof_diamond_pipeline(rig_renderer_t *renderer)
-{
-    rig_engine_t *engine = renderer->engine;
-    cg_pipeline_t *dof_diamond_pipeline =
-        cg_pipeline_copy(renderer->dof_pipeline_template);
-    cg_snippet_t *snippet;
-
-    cg_pipeline_set_layer_texture(dof_diamond_pipeline, 0,
-                                  engine->shell->circle_texture);
-
-    snippet = cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
-                             /* declarations */
-                             "in float dof_blur;",
-
-                             /* post */
-                             "if (cg_color_out.a <= 0.0)\n"
-                             "  discard;\n"
-                             "\n"
-                             "cg_color_out.a = dof_blur;\n");
-
-    cg_pipeline_add_snippet(dof_diamond_pipeline, snippet);
-    cg_object_unref(snippet);
-
-    renderer->dof_diamond_pipeline = dof_diamond_pipeline;
-}
-
-static void
 init_dof_unshaped_pipeline(rig_renderer_t *renderer)
 {
     cg_pipeline_t *dof_unshaped_pipeline =
@@ -739,36 +704,6 @@ rig_renderer_init(rig_renderer_t *renderer)
                        "out vec4 pos;\n",
                        "pos = cg_position_in;\n");
 
-    renderer->pointalism_vertex_snippet = cg_snippet_new(
-        CG_SNIPPET_HOOK_VERTEX_TRANSFORM,
-        "in vec2 cell_xy;\n"
-        "in vec4 cell_st;\n"
-        "uniform float scale_factor;\n"
-        "uniform float z_trans;\n"
-        "uniform int anti_scale;\n"
-        "out vec4 av_color;\n",
-        "float grey;\n"
-        "av_color = rig_source_sample1 (vec2 (cell_st.x, cell_st.z));\n"
-        "av_color += rig_source_sample1 (vec2 (cell_st.y, cell_st.z));\n"
-        "av_color += rig_source_sample1 (vec2 (cell_st.y, cell_st.w));\n"
-        "av_color += rig_source_sample1 (vec2 (cell_st.x, cell_st.w));\n"
-        "av_color /= 4.0;\n"
-        "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * "
-        "0.0722;\n"
-        "if (anti_scale == 1)\n"
-        "{"
-        "  pos.xy *= scale_factor * grey;\n"
-        "  pos.z += z_trans * grey;\n"
-        "}"
-        "else\n"
-        "{"
-        "  pos.xy *= scale_factor - (scale_factor * grey);\n"
-        "  pos.z += z_trans - (z_trans * grey);\n"
-        "}"
-        "pos.x += cell_xy.x;\n"
-        "pos.y += cell_xy.y;\n"
-        "cg_position_out = cg_modelview_projection_matrix * pos;\n");
-
     renderer->shadow_mapping_vertex_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_VERTEX,
 
@@ -928,43 +863,11 @@ rig_renderer_init(rig_renderer_t *renderer)
                        "    shadow = 0.5;\n"
                        "  cg_color_out.rgb = shadow * cg_color_out.rgb;\n");
 
-    renderer->pointalism_halo_snippet =
-        cg_snippet_new(CG_SNIPPET_HOOK_FRAGMENT,
-                       /* declarations */
-                       "in vec4 av_color;\n",
-
-                       /* post */
-                       "  cg_color_out = av_color;\n"
-                       "#if __VERSION__ >= 130\n"
-                       "  cg_color_out *=\n"
-                       "    texture (cg_sampler0, cg_tex_coord0_in.st);\n"
-                       "#else\n"
-                       "  cg_color_out *=\n"
-                       "    texture2D (cg_sampler0, cg_tex_coord0_in.st);\n"
-                       "#endif\n"
-                       "  if (cg_color_out.a > 0.90 || cg_color_out.a <= 0.0)\n"
-                       "    discard;\n");
-
-    renderer->pointalism_opaque_snippet = cg_snippet_new(
-        CG_SNIPPET_HOOK_FRAGMENT,
-        /* declarations */
-        "in vec4 av_color;\n",
-
-        /* post */
-        "  cg_color_out = av_color;\n"
-        "  cg_color_out *=\n"
-        "    cg_texture_lookup0 (cg_sampler0,\n"
-        "                          vec4(cg_tex_coord0_in.st, 0.0, 1.0));\n"
-        "  if (cg_color_out.a < 0.90)\n"
-        "    discard;\n");
-
     renderer->layer_skip_snippet =
         cg_snippet_new(CG_SNIPPET_HOOK_LAYER_FRAGMENT, NULL, NULL);
     cg_snippet_set_replace(renderer->layer_skip_snippet, "");
 
     init_dof_pipeline_template(renderer);
-
-    init_dof_diamond_pipeline(renderer);
 
     init_dof_unshaped_pipeline(renderer);
 
@@ -986,9 +889,6 @@ rig_renderer_fini(rig_renderer_t *renderer)
 
     cg_object_unref(renderer->dof_pipeline);
     renderer->dof_pipeline = NULL;
-
-    cg_object_unref(renderer->dof_diamond_pipeline);
-    renderer->dof_diamond_pipeline = NULL;
 
     cg_object_unref(renderer->dof_unshaped_pipeline);
     renderer->dof_unshaped_pipeline = NULL;
@@ -1038,15 +938,6 @@ rig_renderer_fini(rig_renderer_t *renderer)
     cg_object_unref(renderer->shadow_mapping_fragment_snippet);
     renderer->shadow_mapping_fragment_snippet = NULL;
 
-    cg_object_unref(renderer->pointalism_vertex_snippet);
-    renderer->pointalism_vertex_snippet = NULL;
-
-    cg_object_unref(renderer->pointalism_halo_snippet);
-    renderer->pointalism_halo_snippet = NULL;
-
-    cg_object_unref(renderer->pointalism_opaque_snippet);
-    renderer->pointalism_opaque_snippet = NULL;
-
     cg_object_unref(renderer->cache_position_snippet);
     renderer->cache_position_snippet = NULL;
 
@@ -1081,31 +972,6 @@ get_entity_mask_pipeline(rig_renderer_t *renderer,
     pipeline = get_entity_pipeline_cache(entity, CACHE_SLOT_SHADOW);
 
     if (pipeline) {
-        if (sources[SOURCE_TYPE_COLOR] &&
-            rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
-            int location;
-            int scale, z;
-
-            rig_source_attach_frame(sources[SOURCE_TYPE_COLOR], pipeline);
-
-            scale = rig_pointalism_grid_get_scale(geometry);
-            z = rig_pointalism_grid_get_z(geometry);
-
-            location =
-                cg_pipeline_get_uniform_location(pipeline, "scale_factor");
-            cg_pipeline_set_uniform_1f(pipeline, location, scale);
-
-            location = cg_pipeline_get_uniform_location(pipeline, "z_trans");
-            cg_pipeline_set_uniform_1f(pipeline, location, z);
-
-            location = cg_pipeline_get_uniform_location(pipeline, "anti_scale");
-
-            if (rig_pointalism_grid_get_lighter(geometry))
-                cg_pipeline_set_uniform_1i(pipeline, location, 1);
-            else
-                cg_pipeline_set_uniform_1i(pipeline, location, 0);
-        }
-
         if (sources[SOURCE_TYPE_ALPHA_MASK]) {
             int location;
 
@@ -1120,51 +986,12 @@ get_entity_mask_pipeline(rig_renderer_t *renderer,
         return cg_object_ref(pipeline);
     }
 
-    if (rut_object_get_type(geometry) == &rig_diamond_type) {
-        pipeline = cg_object_ref(renderer->dof_diamond_pipeline);
-        rig_diamond_apply_mask(geometry, pipeline);
-
-        if (material)
-            add_material_for_mask(pipeline, renderer, material, sources);
-    } else if (rut_object_get_type(geometry) == &rig_shape_type) {
-        pipeline = cg_pipeline_copy(renderer->dof_unshaped_pipeline);
-
-        if (rig_shape_get_shaped(geometry)) {
-            cg_texture_t *shape_texture = rig_shape_get_shape_texture(geometry);
-
-            cg_pipeline_set_layer_texture(pipeline, 0, shape_texture);
-        }
-
-        if (material)
-            add_material_for_mask(pipeline, renderer, material, sources);
-    } else if (rut_object_get_type(geometry) == &rig_nine_slice_type) {
+    if (rut_object_get_type(geometry) == &rig_nine_slice_type) {
         pipeline = cg_pipeline_copy(renderer->dof_unshaped_pipeline);
 
         if (material)
             add_material_for_mask(pipeline, renderer, material, sources);
-    } else if (rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
-        pipeline = cg_pipeline_copy(renderer->dof_diamond_pipeline);
-
-        if (material) {
-            if (sources[SOURCE_TYPE_COLOR]) {
-                rig_source_set_first_layer(sources[SOURCE_TYPE_COLOR], 1);
-                rig_source_set_default_sample(sources[SOURCE_TYPE_COLOR],
-                                                    false);
-                rig_source_setup_pipeline(sources[SOURCE_TYPE_COLOR], pipeline);
-                cg_pipeline_add_snippet(pipeline,
-                                        renderer->pointalism_vertex_snippet);
-            }
-
-            if (sources[SOURCE_TYPE_ALPHA_MASK]) {
-                rig_source_set_first_layer(
-                    sources[SOURCE_TYPE_ALPHA_MASK], 4);
-                rig_source_set_default_sample(sources[SOURCE_TYPE_COLOR],
-                                                    false);
-                rig_source_setup_pipeline(sources[SOURCE_TYPE_COLOR], pipeline);
-                cg_pipeline_add_snippet(pipeline, renderer->alpha_mask_snippet);
-            }
-        }
-    } else
+    } else 
         pipeline = cg_object_ref(renderer->dof_pipeline);
 
     set_entity_pipeline_cache(entity, CACHE_SLOT_SHADOW, pipeline);
@@ -1268,26 +1095,6 @@ get_entity_color_pipeline(rig_renderer_t *renderer,
     if (rig_material_get_receive_shadow(material))
         cg_pipeline_add_snippet(pipeline,
                                 renderer->shadow_mapping_vertex_snippet);
-
-    if (rut_object_get_type(geometry) == &rig_shape_type &&
-        rig_shape_get_shaped(geometry))
-    {
-        cg_texture_t *shape_texture = rig_shape_get_shape_texture(geometry);
-        cg_pipeline_set_layer_texture(pipeline, 0, shape_texture);
-    } else if (rut_object_get_type(geometry) == &rig_diamond_type) {
-        rig_diamond_apply_mask(geometry, pipeline);
-    } else if (rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
-        cg_pipeline_set_layer_texture(pipeline, 0, engine->shell->circle_texture);
-        cg_pipeline_set_layer_filters(pipeline,
-                                      0,
-                                      CG_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR,
-                                      CG_PIPELINE_FILTER_LINEAR);
-
-        cg_pipeline_add_snippet(pipeline, renderer->pointalism_vertex_snippet);
-
-        blend = renderer->pointalism_halo_snippet;
-        unblend = renderer->pointalism_opaque_snippet;
-    }
 
     /* and fragment shader */
 
@@ -1529,23 +1336,6 @@ get_entity_primitive(rig_renderer_t *renderer,
                          dirty_geometry_cb, entity);
         rig_nine_slice_add_update_callback((rig_nine_slice_t *)geometry,
                                            &priv->geom_changed_closure);
-    } else if (rut_object_get_type(geometry) == &rig_shape_type) {
-        rut_closure_init(&priv->geom_changed_closure,
-                         dirty_geometry_and_pipelines_cb, entity);
-        rig_shape_add_reshaped_callback((rig_shape_t *)geometry,
-                                        &priv->geom_changed_closure);
-    } else if (rut_object_get_type(geometry) == &rig_diamond_type) {
-        rut_closure_init(&priv->geom_changed_closure,
-                         dirty_geometry_and_pipelines_cb, entity);
-        rig_diamond_add_update_callback((rig_diamond_t *)geometry,
-                                        &priv->geom_changed_closure);
-    } else if (rut_object_get_type(geometry) == &rig_pointalism_grid_type) {
-        rig_pointalism_grid_t *grid = (rig_pointalism_grid_t *)geometry;
-
-        rut_closure_init(&priv->geom_changed_closure,
-                         dirty_geometry_and_pipelines_cb, entity);
-        rig_pointalism_grid_add_update_callback(grid,
-                                                &priv->geom_changed_closure);
     }
 
     return primitive;

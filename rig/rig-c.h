@@ -211,12 +211,9 @@ void r_open_view(RModule *module, RObject *camera_entity);
 
 RObject *r_light_new(RModule *module);
 
-RObject *r_shape_new(RModule *module, float width, float height);
 RObject *r_nine_slice_new(RModule *module,
                           float top, float right, float bottom, float left,
                           float width, float height);
-RObject *r_diamond_new(RModule *module, float size);
-RObject *r_pointalism_grid_new(RModule *module, float size);
 
 RObject *r_material_new(RModule *module);
 RObject *r_source_new(RModule *module, const char *url);
