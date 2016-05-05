@@ -114,24 +114,6 @@ message Rotation
   required float z=4;
 }
 
-//Deprecated
-message Texture
-{
-  optional sint64 asset_id=1; //XXX ID
-}
-
-//Deprecated
-message NormalMap
-{
-  optional sint64 asset_id=1; //XXX ID
-}
-
-//Deprecated
-message AlphaMask
-{
-  optional sint64 asset_id=1; //XXX ID
-}
-
 message Viewport
 {
   required float x=1;
@@ -187,7 +169,6 @@ message PropertyValue
   optional Vec4 vec4_value=13;
 
   optional string text_value=14;
-  optional sint64 asset_value=15; //XXX ID
 }
 
 message Boxed
@@ -293,8 +274,6 @@ message UI
   optional Mode mode=5;
 
   optional Device device=1;
-
-  repeated Asset assets=2;
 
   repeated Entity entities=3;
 

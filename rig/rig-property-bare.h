@@ -45,13 +45,6 @@ typedef enum _rig_property_type_t {
     RUT_PROPERTY_TYPE_VEC4,
     RUT_PROPERTY_TYPE_COLOR,
     RUT_PROPERTY_TYPE_OBJECT,
-
-    /* FIXME: instead of supporting rig_asset_t properties we should
-     * support declaring type validation information for rut_object_t
-     * propertys. You should be able to specify a specific rut_type_t or a
-     * mask of interfaces.
-     */
-    RUT_PROPERTY_TYPE_ASSET,
     RUT_PROPERTY_TYPE_POINTER,
 } rig_property_type_t;
 
@@ -70,7 +63,6 @@ typedef struct _rut_boxed_t {
         float vec4_val[4];
         cg_color_t color_val;
         rut_object_t *object_val;
-        rut_object_t *asset_val;
         void *pointer_val;
     } d;
 } rut_boxed_t;
@@ -123,17 +115,12 @@ typedef struct _rig_property_validation_object_t {
     rut_type_t *type;
 } rig_property_validation_object_t;
 
-typedef struct _rig_property_validation_asset_t {
-    rig_asset_type_t type;
-} rig_property_validation_asset_t;
-
 typedef union _rig_property_validation_t {
     rig_property_validation_integer_t int_range;
     rig_property_validation_float_t float_range;
     rig_property_validation_vec3_t vec3_range;
     rig_property_validation_vec4_t vec4_range;
     rig_property_validation_object_t object;
-    rig_property_validation_asset_t asset;
     const rut_ui_enum_t *ui_enum;
 } rig_property_validation_t;
 
@@ -178,7 +165,6 @@ typedef struct _rig_property_spec_t {
         const float *(*vec3_type)(void *object);
         const float *(*vec4_type)(void *object);
         void *(*object_type)(void *object);
-        rig_asset_t *(*asset_type)(rut_object_t *object);
         void *(*pointer_type)(void *object);
 
         /* This is just used to check the pointer against NULL */
@@ -198,7 +184,6 @@ typedef struct _rig_property_spec_t {
         void (*vec3_type)(void *object, const float value[3]);
         void (*vec4_type)(void *object, const float value[4]);
         void (*object_type)(void *object, void *value);
-        void (*asset_type)(rut_object_t *object, rig_asset_t *value);
         void (*pointer_type)(void *object, void *value);
 
         /* This is just used to check the pointer against NULL */

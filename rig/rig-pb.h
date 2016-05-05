@@ -26,8 +26,7 @@
  * SOFTWARE.
  */
 
-#ifndef __RIG_PB_H__
-#define __RIG_PB_H__
+#pragma once
 
 #include <rut.h>
 
@@ -43,8 +42,6 @@ typedef struct _rig_pb_unserializer_t rig_pb_unserializer_t;
 #include "components/rig-camera.h"
 #include "components/rig-light.h"
 
-typedef bool (*rig_pb_asset_filter_t)(rig_asset_t *asset, void *user_data);
-
 typedef uint64_t (*rig_pb_serializer_object_register_callback_t)(
     void *object, void *user_data);
 
@@ -56,19 +53,11 @@ struct _rig_pb_serializer_t {
 
     rut_memory_stack_t *stack;
 
-    rig_pb_asset_filter_t asset_filter;
-    void *asset_filter_data;
-
     rig_pb_serializer_object_register_callback_t object_register_callback;
     void *object_register_data;
 
     rig_pb_serializer_object_to_id_callback_t object_to_id_callback;
     void *object_to_id_data;
-
-    bool only_asset_ids;
-    c_llist_t *required_assets;
-
-    bool skip_image_data;
 
     int n_pb_entities;
     c_llist_t *pb_entities;
@@ -128,9 +117,6 @@ _rig_pb_dup(rig_pb_serializer_t *serializer,
 
 const char *rig_pb_strdup(rig_pb_serializer_t *serializer, const char *string);
 
-typedef void (*rig_asset_reference_callback_t)(rig_asset_t *asset,
-                                               void *user_data);
-
 rig_pb_serializer_t *rig_pb_serializer_new(rig_engine_t *engine);
 
 void rig_pb_serializer_set_stack(rig_pb_serializer_t *serializer,
@@ -139,14 +125,6 @@ void rig_pb_serializer_set_stack(rig_pb_serializer_t *serializer,
 void
 rig_pb_serializer_set_use_pointer_ids_enabled(rig_pb_serializer_t *serializer,
                                               bool use_pointers);
-
-void rig_pb_serializer_set_asset_filter(rig_pb_serializer_t *serializer,
-                                        rig_pb_asset_filter_t filter,
-                                        void *user_data);
-
-void
-rig_pb_serializer_set_only_asset_ids_enabled(rig_pb_serializer_t *serializer,
-                                             bool only_ids);
 
 void rig_pb_serializer_set_object_register_callback(
     rig_pb_serializer_t *serializer,
@@ -157,9 +135,6 @@ void rig_pb_serializer_set_object_to_id_callback(
     rig_pb_serializer_t *serializer,
     rig_pb_serializer_object_to_id_callback_t callback,
     void *user_data);
-
-void rig_pb_serializer_set_skip_image_data(rig_pb_serializer_t *serializer,
-                                           bool skip);
 
 uint64_t rig_pb_serializer_register_object(rig_pb_serializer_t *serializer,
                                            void *object);
@@ -227,11 +202,6 @@ typedef void *(*rig_pb_unserializer_id_to_object_callback_t)(rig_ui_t *ui,
                                                              uint64_t id,
                                                              void *user_data);
 
-typedef rig_asset_t *(*rig_pb_unserializer_asset_callback_t)(
-    rig_pb_unserializer_t *unserializer,
-    Rig__Asset *pb_asset,
-    void *user_data);
-
 struct _rig_pb_unserializer_t {
     rig_engine_t *engine;
 
@@ -247,10 +217,6 @@ struct _rig_pb_unserializer_t {
     rig_pb_unserializer_id_to_object_callback_t id_to_object_callback;
     void *id_to_object_data;
 
-    rig_pb_unserializer_asset_callback_t unserialize_asset_callback;
-    void *unserialize_asset_data;
-
-    c_llist_t *assets;
     c_llist_t *entities;
     c_llist_t *views;
     c_llist_t *controllers;
@@ -279,11 +245,6 @@ void rig_pb_unserializer_set_object_unregister_callback(
 void rig_pb_unserializer_set_id_to_object_callback(
     rig_pb_unserializer_t *serializer,
     rig_pb_unserializer_id_to_object_callback_t callback,
-    void *user_data);
-
-void rig_pb_unserializer_set_asset_unserialize_callback(
-    rig_pb_unserializer_t *unserializer,
-    rig_pb_unserializer_asset_callback_t callback,
     void *user_data);
 
 void rig_pb_unserializer_collect_error(rig_pb_unserializer_t *unserializer,
@@ -351,5 +312,3 @@ void rig_pb_unserialize_controller_properties(
 
 void rig_pb_unserializer_log_errors(rig_pb_unserializer_t *unserializer);
 void rig_pb_unserializer_clear_errors(rig_pb_unserializer_t *unserializer);
-
-#endif /* __RIG_PB_H__ */

@@ -68,9 +68,6 @@ void rig_node_boolean_lerp(rig_node_t *a, rig_node_t *b, float t, bool *value);
 void
 rig_node_text_lerp(rig_node_t *a, rig_node_t *b, float t, const char **value);
 
-void
-rig_node_asset_lerp(rig_node_t *a, rig_node_t *b, float t, rig_asset_t **value);
-
 void rig_node_object_lerp(rig_node_t *a,
                           rig_node_t *b,
                           float t,
@@ -102,8 +99,6 @@ rig_node_t *rig_node_new_for_boolean(float t, bool value);
 rig_node_t *rig_node_new_for_enum(float t, int value);
 
 rig_node_t *rig_node_new_for_text(float t, const char *value);
-
-rig_node_t *rig_node_new_for_asset(float t, rig_asset_t *value);
 
 rig_node_t *rig_node_new_for_object(float t, rut_object_t *value);
 

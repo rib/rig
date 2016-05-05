@@ -156,10 +156,6 @@ rig_engine_t *rig_engine_new_for_simulator(rut_shell_t *shell,
 
 void rig_engine_set_ui(rig_engine_t *engine, rig_ui_t *ui);
 
-/* FIXME: find a better place to put these prototypes */
-void rig_register_asset(rig_engine_t *engine, rig_asset_t *asset);
-rig_asset_t *rig_lookup_asset(rig_engine_t *engine, const char *path);
-
 void rig_engine_set_log_op_callback(rig_engine_t *engine,
                                     void (*callback)(Rig__Operation *pb_op,
                                                      void *user_data),

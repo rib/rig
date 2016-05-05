@@ -574,14 +574,6 @@ case RUT_PROPERTY_TYPE_##TYPE: {                                           \
             boxed->d.object_val = NULL;
         break;
     }
-    case RUT_PROPERTY_TYPE_ASSET: {
-        rut_object_t *obj = rig_property_get_asset(property);
-        if (obj)
-            boxed->d.asset_val = rut_object_ref(obj);
-        else
-            boxed->d.asset_val = NULL;
-        break;
-    }
     case RUT_PROPERTY_TYPE_POINTER: {
         boxed->d.pointer_val = rig_property_get_pointer(property);
         break;
@@ -634,13 +626,6 @@ case RUT_PROPERTY_TYPE_##TYPE:                                             \
             dst->d.object_val = NULL;
         return;
     }
-    case RUT_PROPERTY_TYPE_ASSET: {
-        if (src->d.asset_val)
-            dst->d.asset_val = rut_object_ref(src->d.asset_val);
-        else
-            dst->d.asset_val = NULL;
-        return;
-    }
     case RUT_PROPERTY_TYPE_POINTER:
         dst->d.pointer_val = src->d.pointer_val;
         return;
@@ -672,10 +657,6 @@ rut_boxed_destroy(rut_boxed_t *boxed)
     case RUT_PROPERTY_TYPE_OBJECT:
         if (boxed->d.object_val)
             rut_object_unref(boxed->d.object_val);
-        break;
-    case RUT_PROPERTY_TYPE_ASSET:
-        if (boxed->d.asset_val)
-            rut_object_unref(boxed->d.asset_val);
         break;
     case RUT_PROPERTY_TYPE_POINTER:
         c_free(boxed->d.text_val);
@@ -829,8 +810,6 @@ rut_boxed_to_string(const rut_boxed_t *boxed,
         return c_strdup_printf("<%p:%s>",
                                boxed->d.object_val,
                                rut_object_get_type_name(boxed->d.object_val));
-    case RUT_PROPERTY_TYPE_ASSET:
-        return c_strdup_printf("<%p:Asset>", boxed->d.asset_val);
     case RUT_PROPERTY_TYPE_POINTER:
         return c_strdup_printf("%p", boxed->d.pointer_val);
     default:
