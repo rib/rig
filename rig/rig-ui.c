@@ -91,10 +91,6 @@ _rig_ui_free(void *object)
         rut_object_release(l->data, ui);
     c_llist_free(ui->controllers);
 
-    for (l = ui->assets; l; l = l->next)
-        rut_object_unref(l->data);
-    c_llist_free(ui->assets);
-
     if (ui->dso_data)
         c_free(ui->dso_data);
 
@@ -135,14 +131,6 @@ rig_ui_reap(rig_ui_t *ui)
     }
     c_llist_free(ui->controllers);
     ui->controllers = NULL;
-
-    for (l = ui->assets; l; l = l->next) {
-        rig_asset_t *asset = l->data;
-        rig_asset_reap(asset, engine);
-        rut_object_release(asset, ui);
-    }
-    c_llist_free(ui->assets);
-    ui->assets = NULL;
 
     for (l = ui->views; l; l = l->next) {
         rig_view_reap(l->data);
@@ -326,13 +314,6 @@ rig_ui_print(rig_ui_t *ui)
 
     c_debug("Controllers:\n");
     for (l = ui->controllers; l; l = l->next) {
-        char *name = rig_engine_get_object_debug_name(l->data);
-        c_debug("  %s\n", name);
-        c_free(name);
-    }
-
-    c_debug("Assets:\n");
-    for (l = ui->assets; l; l = l->next) {
         char *name = rig_engine_get_object_debug_name(l->data);
         c_debug("  %s\n", name);
         c_free(name);

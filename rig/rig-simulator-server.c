@@ -215,11 +215,6 @@ int main(int argc, char **argv)
     simulator = rig_simulator_new(NULL);
     shell = simulator->shell;
 
-    /* Have browser based frontends fetch and load images as any
-     * typical web page would instead of serializing images over the
-     * rpc protocol... */
-    simulator->frontend_features.image_loader = true;
-
     rig_simulator_queue_ui_load_on_connect(simulator, ui_filename);
 
 #ifdef USE_NCURSES

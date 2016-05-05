@@ -84,8 +84,6 @@ struct _rig_ui_t {
      */
     rut_object_t *renderer;
 
-    c_llist_t *assets;
-
     rut_object_t *scene;
 
     c_llist_t *cameras;

@@ -79,7 +79,7 @@ static Rig__PropertyValue *
 maybe_copy_property_value(rig_engine_op_copy_context_t *ctx,
                           Rig__PropertyValue *src_value)
 {
-    if (src_value->has_object_value || src_value->has_asset_value) {
+    if (src_value->has_object_value) {
         return rig_pb_dup(ctx->serializer,
                           Rig__PropertyValue,
                           rig__property_value__init,
@@ -96,10 +96,6 @@ maybe_map_property_value(rig_engine_op_map_context_t *ctx,
         value->object_value =
             ctx->map_id_cb(value->object_value, ctx->user_data);
         if (!value->object_value)
-            return false;
-    } else if (value->has_asset_value) {
-        value->asset_value = ctx->map_id_cb(value->asset_value, ctx->user_data);
-        if (!value->asset_value)
             return false;
     }
 

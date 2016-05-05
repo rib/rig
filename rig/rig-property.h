@@ -40,18 +40,6 @@
 #include "rut-object.h"
 #include "rut-types.h"
 
-/* FIXME: instead of supporting rig_asset_t properties we should
- * support declaring type validation information for
- * rut_object_t propertys. You should be able to specify a
- * specific rut_type_t or a mask of interfaces.
- */
-#ifndef RIG_ASSET_TYPEDEF
-/* Note: we avoid including rig-asset.h to avoid a circular
- * dependency */
-typedef struct _rig_asset_t rig_asset_t;
-#define RIG_ASSET_TYPEDEF
-#endif
-
 /* Note that rig-property-bare.h does not include all necessary
  * headers to define all prerequisite types because it also in support
  * of Rig's ui logic where some of the types are defined separately to

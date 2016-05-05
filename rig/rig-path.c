@@ -507,23 +507,6 @@ rig_path_insert_text(rig_path_t *path, float t, const char *value)
 }
 
 void
-rig_path_insert_asset(rig_path_t *path, float t, rig_asset_t *value)
-{
-    rig_node_t *node = rig_path_find_node(path, t);
-
-    if (node) {
-        if (node->boxed.d.asset_val)
-            rut_object_unref(node->boxed.d.asset_val);
-        node->boxed.d.asset_val = rut_object_ref(value);
-        notify_node_modified(path, node);
-    } else {
-        node = rig_node_new_for_asset(t, value);
-        insert_sorted_node(path, node);
-        notify_node_added(path, node);
-    }
-}
-
-void
 rig_path_insert_object(rig_path_t *path, float t, rut_object_t *value)
 {
     rig_node_t *node = rig_path_find_node(path, t);
@@ -625,12 +608,6 @@ rig_path_lerp_property(rig_path_t *path, rig_property_t *property, float t)
         rig_property_set_text(&path->engine->_property_ctx, property, value);
         break;
     }
-    case RUT_PROPERTY_TYPE_ASSET: {
-        rig_asset_t *value;
-        rig_node_asset_lerp(n0, n1, t, &value);
-        rig_property_set_asset(&path->engine->_property_ctx, property, value);
-        break;
-    }
     case RUT_PROPERTY_TYPE_OBJECT: {
         rut_object_t *value;
         rig_node_object_lerp(n0, n1, t, &value);
@@ -706,10 +683,6 @@ rig_path_insert_boxed(rig_path_t *path, float t, const rut_boxed_t *value)
 
     case RUT_PROPERTY_TYPE_TEXT:
         rig_path_insert_text(path, t, value->d.text_val);
-        return;
-
-    case RUT_PROPERTY_TYPE_ASSET:
-        rig_path_insert_asset(path, t, value->d.asset_val);
         return;
 
     case RUT_PROPERTY_TYPE_OBJECT:

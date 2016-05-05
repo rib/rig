@@ -163,12 +163,6 @@ get_property_codegen_info(rig_property_t *property,
         *var_decl_post = "";
         *get_val_pre = "const rut_object_t *";
         break;
-    case RUT_PROPERTY_TYPE_ASSET:
-        *type_name = "asset";
-        *var_decl_pre = "rig_asset_t *";
-        *var_decl_post = "";
-        *get_val_pre = "const rig_asset_t *";
-        break;
     case RUT_PROPERTY_TYPE_POINTER:
         *type_name = "pointer";
         *var_decl_pre = "void *";

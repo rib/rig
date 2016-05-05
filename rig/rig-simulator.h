@@ -100,9 +100,7 @@ struct _rig_simulator_t {
 #endif
 
     struct {
-        /* The frontend only needs asset paths and will be responsible
-         * for loading those assets (E.g. browser based frontend) */
-        unsigned image_loader : 1;
+        int dummy;
     } frontend_features;
 
     rig_pb_stream_t *stream;

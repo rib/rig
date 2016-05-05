@@ -204,7 +204,6 @@ pb_path_new(rig_pb_serializer_t *serializer, rig_path_t *path)
         case RUT_PROPERTY_TYPE_ENUM:
         case RUT_PROPERTY_TYPE_BOOLEAN:
         case RUT_PROPERTY_TYPE_TEXT:
-        case RUT_PROPERTY_TYPE_ASSET:
         case RUT_PROPERTY_TYPE_OBJECT:
         case RUT_PROPERTY_TYPE_POINTER:
             c_warn_if_reached();
@@ -283,21 +282,6 @@ rig_pb_property_value_init(rig_pb_serializer_t *serializer,
         pb_value->enum_value = value->d.enum_val;
         break;
 
-    case RUT_PROPERTY_TYPE_ASSET:
-        pb_value->has_asset_value = true;
-
-        if (value->d.asset_val) {
-            uint64_t id = rig_pb_serializer_lookup_object_id(
-                serializer, value->d.asset_val);
-
-            c_warn_if_fail(id != 0);
-
-            pb_value->asset_value = id;
-        } else
-            pb_value->asset_value = 0;
-
-        break;
-
     case RUT_PROPERTY_TYPE_OBJECT:
         pb_value->has_object_value = true;
 
@@ -359,8 +343,6 @@ rig_property_type_to_pb_type(rig_property_type_t type)
         return RIG__PROPERTY_TYPE__COLOR;
     case RUT_PROPERTY_TYPE_OBJECT:
         return RIG__PROPERTY_TYPE__OBJECT;
-    case RUT_PROPERTY_TYPE_ASSET:
-        return RIG__PROPERTY_TYPE__ASSET;
 
     case RUT_PROPERTY_TYPE_POINTER:
         c_warn_if_reached();
@@ -1070,20 +1052,6 @@ uint64_t
 rig_pb_serializer_lookup_object_id(rig_pb_serializer_t *serializer,
                                    void *object)
 {
-    if (rut_object_get_type(object) == &rig_asset_type) {
-        bool need_asset = true;
-
-        if (serializer->asset_filter) {
-            need_asset =
-                serializer->asset_filter(object, serializer->asset_filter_data);
-        }
-
-        if (need_asset) {
-            serializer->required_assets =
-                c_llist_prepend(serializer->required_assets, object);
-        }
-    }
-
     return serializer->object_to_id_callback(object,
                                              serializer->object_to_id_data);
 }
@@ -1139,22 +1107,6 @@ rig_pb_serializer_set_use_pointer_ids_enabled(rig_pb_serializer_t *serializer,
 }
 
 void
-rig_pb_serializer_set_asset_filter(rig_pb_serializer_t *serializer,
-                                   rig_pb_asset_filter_t filter,
-                                   void *user_data)
-{
-    serializer->asset_filter = filter;
-    serializer->asset_filter_data = user_data;
-}
-
-void
-rig_pb_serializer_set_only_asset_ids_enabled(rig_pb_serializer_t *serializer,
-                                             bool only_ids)
-{
-    serializer->only_asset_ids = only_ids;
-}
-
-void
 rig_pb_serializer_set_object_register_callback(
     rig_pb_serializer_t *serializer,
     rig_pb_serializer_object_register_callback_t callback,
@@ -1175,158 +1127,12 @@ rig_pb_serializer_set_object_to_id_callback(
 }
 
 void
-rig_pb_serializer_set_skip_image_data(rig_pb_serializer_t *serializer,
-                                      bool skip)
-{
-    serializer->skip_image_data = skip;
-}
-
-void
 rig_pb_serializer_destroy(rig_pb_serializer_t *serializer)
 {
-    if (serializer->required_assets)
-        c_llist_free(serializer->required_assets);
-
     if (serializer->object_to_id_map)
         c_hash_table_destroy(serializer->object_to_id_map);
 
     c_slice_free(rig_pb_serializer_t, serializer);
-}
-
-static Rig__Asset *
-serialize_mesh_asset(rig_pb_serializer_t *serializer,
-                     rig_asset_t *asset)
-{
-    rut_mesh_t *mesh = rig_asset_get_mesh(asset);
-    Rig__Asset *pb_asset;
-
-    if (!mesh) {
-        c_warning("Missing asset mesh");
-        return NULL;
-    }
-
-    pb_asset = rig_pb_new(serializer, Rig__Asset, rig__asset__init);
-
-    pb_asset->has_id = true;
-    pb_asset->id = rig_pb_serializer_lookup_object_id(serializer, asset);
-
-    pb_asset->path = (char *)rig_asset_get_path(asset);
-
-    pb_asset->has_type = true;
-    pb_asset->type = RIG_ASSET_TYPE_MESH;
-
-    pb_asset->mesh = rig_pb_serialize_mesh(serializer, mesh);
-
-    return pb_asset;
-}
-
-static bool
-serialize_asset_file(Rig__Asset *pb_asset, rig_asset_t *asset)
-{
-    rut_shell_t *shell = rig_asset_get_shell(asset);
-    const char *path = rig_asset_get_path(asset);
-    char *full_path = c_build_filename(shell->assets_location, path, NULL);
-    c_error_t *error = NULL;
-    char *contents;
-    size_t len;
-
-    contents = rig_asset_get_data(asset);
-
-    if (contents) {
-        len = rig_asset_get_data_len(asset);
-    } else {
-        if (!c_file_get_contents(full_path, &contents, &len, &error)) {
-            c_warning("Failed to read contents of asset: %s", error->message);
-            c_error_free(error);
-            c_free(full_path);
-            return false;
-        }
-    }
-
-    c_free(full_path);
-
-    pb_asset->has_data = true;
-    pb_asset->data.data = (uint8_t *)contents;
-    pb_asset->data.len = len;
-
-    return true;
-}
-
-static Rig__Asset *
-serialize_asset(rig_pb_serializer_t *serializer,
-                rig_asset_t *asset)
-{
-    Rig__Asset *pb_asset;
-    rig_asset_type_t type;
-
-    if (serializer->only_asset_ids) {
-        pb_asset = rig_pb_new(serializer, Rig__Asset, rig__asset__init);
-
-        pb_asset->has_id = true;
-        pb_asset->id = rig_pb_serializer_lookup_object_id(serializer, asset);
-
-        return pb_asset;
-    }
-
-    type = rig_asset_get_type(asset);
-
-    switch (type) {
-    case RIG_ASSET_TYPE_MESH:
-        return serialize_mesh_asset(serializer, asset);
-    case RIG_ASSET_TYPE_TEXTURE:
-    case RIG_ASSET_TYPE_NORMAL_MAP:
-    case RIG_ASSET_TYPE_ALPHA_MASK:
-        pb_asset = rig_pb_new(serializer, Rig__Asset, rig__asset__init);
-
-        pb_asset->has_id = true;
-        pb_asset->id = rig_pb_serializer_lookup_object_id(serializer, asset);
-
-        pb_asset->has_type = true;
-        pb_asset->type = rig_asset_get_type(asset);
-
-        pb_asset->has_width = true;
-        pb_asset->has_height = true;
-        rig_asset_get_image_size(asset, &pb_asset->width, &pb_asset->height);
-
-        pb_asset->path = (char *)rig_asset_get_path(asset);
-        pb_asset->mime_type = (char *)rig_asset_get_mime_type(asset);
-
-        if (!serializer->skip_image_data) {
-            if (!serialize_asset_file(pb_asset, asset))
-                return NULL;
-        }
-        break;
-    case RIG_ASSET_TYPE_FONT: {
-        pb_asset = rig_pb_new(serializer, Rig__Asset, rig__asset__init);
-
-        pb_asset->has_id = true;
-        pb_asset->id = rig_pb_serializer_lookup_object_id(serializer, asset);
-
-        pb_asset->has_type = true;
-        pb_asset->type = rig_asset_get_type(asset);
-
-        pb_asset->path = (char *)rig_asset_get_path(asset);
-
-        if (!serialize_asset_file(pb_asset, asset))
-            return NULL;
-    } break;
-    case RIG_ASSET_TYPE_BUILTIN:
-        /* XXX: We should be aiming to remove the "builtin" asset type
-         * and instead making the editor handle builtins specially
-         * in how it lists search results.
-         */
-        c_warning("Can't serialize \"builtin\" asset type");
-        return NULL;
-    }
-
-    return pb_asset;
-}
-
-static void
-serialized_asset_destroy(Rig__Asset *serialized_asset)
-{
-    if (serialized_asset->has_data)
-        c_free(serialized_asset->data.data);
 }
 
 static uint64_t
@@ -1397,13 +1203,6 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
     for (i = 0, l = ui->buffers; l; i++, l = l->next)
         pb_ui->buffers[i] = rig_pb_serialize_buffer(serializer, l->data, true);
 
-    /* Register all assets up front, but we only actually serialize those
-     * assets that are referenced - indicated by a corresponding id lookup
-     * in rig_pb_serializer_lookup_object_id()
-     */
-    for (l = ui->assets; l; l = l->next)
-        rig_pb_serializer_register_object(serializer, l->data);
-
     serializer->n_pb_entities = 0;
     rut_graphable_traverse(ui->scene,
                            RUT_TRAVERSE_DEPTH_FIRST,
@@ -1440,34 +1239,6 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
         }
     }
 
-    pb_ui->n_assets = c_llist_length(serializer->required_assets);
-    if (pb_ui->n_assets) {
-        rig_pb_asset_filter_t save_filter = serializer->asset_filter;
-        int i;
-
-        /* Temporarily disable the asset filter that is called in
-         * rig_pb_serializer_lookup_object_id() since we have already
-         * filtered all of the assets required and we now only need to
-         * lookup the ids for serializing the assets themselves. */
-        serializer->asset_filter = NULL;
-
-        pb_ui->assets =
-            rut_memory_stack_memalign(serializer->stack,
-                                      pb_ui->n_assets * sizeof(void *),
-                                      C_ALIGNOF(void *));
-        for (i = 0, l = serializer->required_assets; l; l = l->next) {
-            rig_asset_t *asset = l->data;
-            Rig__Asset *pb_asset = serialize_asset(serializer, asset);
-
-            if (pb_asset)
-                pb_ui->assets[i++] = pb_asset;
-        }
-        pb_ui->n_assets = i;
-
-        /* restore the asset filter */
-        serializer->asset_filter = save_filter;
-    }
-
     if (ui->dso_data) {
         pb_ui->has_dso = true;
         pb_ui->dso.data =
@@ -1481,10 +1252,7 @@ rig_pb_serialize_ui(rig_pb_serializer_t *serializer,
 void
 rig_pb_serialized_ui_destroy(Rig__UI *ui)
 {
-    int i;
-
-    for (i = 0; i < ui->n_assets; i++)
-        serialized_asset_destroy(ui->assets[i]);
+    /* NOP */
 }
 
 Rig__Event **
@@ -1771,16 +1539,6 @@ rig_pb_init_boxed_value(rig_pb_unserializer_t *unserializer,
         boxed->d.enum_val = pb_value->enum_value;
         return true;
 
-    case RUT_PROPERTY_TYPE_ASSET:
-        if (pb_value->asset_value == 0) {
-            boxed->d.asset_val = NULL;
-            return true;
-        } else {
-            boxed->d.asset_val =
-                unserializer_find_object(unserializer, pb_value->asset_value);
-            return !!boxed->d.asset_val;
-        }
-
     case RUT_PROPERTY_TYPE_OBJECT:
 
         if (pb_value->object_value == 0) {
@@ -1922,9 +1680,6 @@ set_property_from_pb_boxed(rig_pb_unserializer_t *unserializer,
         break;
     case RIG__PROPERTY_TYPE__TEXT:
         type = RUT_PROPERTY_TYPE_TEXT;
-        break;
-    case RIG__PROPERTY_TYPE__ASSET:
-        type = RUT_PROPERTY_TYPE_ASSET;
         break;
     }
 
@@ -2264,59 +2019,6 @@ unserialize_entities(rig_pb_unserializer_t *unserializer,
     }
 }
 
-static void
-unserialize_assets(rig_pb_unserializer_t *unserializer,
-                   int n_assets,
-                   Rig__Asset **assets)
-{
-    int i;
-
-    for (i = 0; i < n_assets; i++) {
-        Rig__Asset *pb_asset = assets[i];
-        uint64_t id;
-        rig_asset_t *asset = NULL;
-
-        if (!pb_asset->has_id)
-            continue;
-
-        id = pb_asset->id;
-
-        if (unserializer->unserialize_asset_callback) {
-            void *user_data = unserializer->unserialize_asset_data;
-            asset = unserializer->unserialize_asset_callback(
-                unserializer, pb_asset, user_data);
-        } else if (unserializer_try_find_object(unserializer, id)) {
-            rig_pb_unserializer_collect_error(
-                unserializer, "Duplicate asset id %d", (int)id);
-            continue;
-        } else {
-            rut_exception_t *catch = NULL;
-            asset = rig_asset_new_from_pb_asset(unserializer, pb_asset, &catch);
-            if (!asset) {
-                rig_pb_unserializer_collect_error(
-                    unserializer,
-                    "Error unserializing asset id %d: %s",
-                    (int)id,
-                    catch->message);
-                rut_exception_free(catch);
-            }
-        }
-
-        if (asset) {
-            if (rig_pb_unserializer_register_object(unserializer, asset, id))
-                unserializer->assets = c_llist_prepend(unserializer->assets, asset);
-            else {
-                rut_object_unref(asset);
-                asset = NULL;
-            }
-        } else {
-            rig_pb_unserializer_collect_error(unserializer,
-                                              "Failed to load \"%s\" asset",
-                                              pb_asset->path ? pb_asset->path : "");
-        }
-    }
-}
-
 rig_view_t *
 rig_pb_unserialize_view(rig_pb_unserializer_t *unserializer,
                         Rig__SimpleObject *pb_view)
@@ -2437,7 +2139,6 @@ unserialize_path_nodes(rig_pb_unserializer_t *unserializer,
         case RUT_PROPERTY_TYPE_BOOLEAN:
         case RUT_PROPERTY_TYPE_TEXT:
         case RUT_PROPERTY_TYPE_ENUM:
-        case RUT_PROPERTY_TYPE_ASSET:
         case RUT_PROPERTY_TYPE_OBJECT:
         case RUT_PROPERTY_TYPE_POINTER:
             c_warn_if_reached();
@@ -2774,16 +2475,6 @@ rig_pb_unserializer_set_id_to_object_callback(
 }
 
 void
-rig_pb_unserializer_set_asset_unserialize_callback(
-    rig_pb_unserializer_t *unserializer,
-    rig_pb_unserializer_asset_callback_t callback,
-    void *user_data)
-{
-    unserializer->unserialize_asset_callback = callback;
-    unserializer->unserialize_asset_data = user_data;
-}
-
-void
 rig_pb_unserializer_log_errors(rig_pb_unserializer_t *unserializer)
 {
     c_llist_t *l;
@@ -2845,8 +2536,6 @@ rig_pb_unserialize_ui(rig_pb_unserializer_t *unserializer,
 
     unserialize_buffers(unserializer, pb_ui->n_buffers, pb_ui->buffers);
 
-    unserialize_assets(unserializer, pb_ui->n_assets, pb_ui->assets);
-
     unserialize_entities(unserializer, pb_ui->n_entities, pb_ui->entities);
 
     unserialize_views(unserializer, pb_ui->n_views, pb_ui->views);
@@ -2886,10 +2575,6 @@ rig_pb_unserialize_ui(rig_pb_unserializer_t *unserializer,
     }
     c_llist_free(unserializer->controllers);
     unserializer->controllers = NULL;
-
-    c_debug("unserialized ui assets list  %p\n", unserializer->assets);
-    ui->assets = unserializer->assets;
-    unserializer->assets = NULL;
 
     for (l = unserializer->buffers; l; l = l->next) {
         rig_ui_add_buffer(ui, l->data);

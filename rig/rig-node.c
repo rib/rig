@@ -202,15 +202,6 @@ rig_node_text_lerp(rig_node_t *a, rig_node_t *b, float t, const char **value)
 }
 
 void
-rig_node_asset_lerp(rig_node_t *a, rig_node_t *b, float t, rig_asset_t **value)
-{
-    if (a->t >= b->t)
-        *value = a->boxed.d.asset_val;
-    else
-        *value = b->boxed.d.asset_val;
-}
-
-void
 rig_node_object_lerp(rig_node_t *a,
                      rig_node_t *b,
                      float t,
@@ -279,11 +270,6 @@ rig_node_box(rig_property_type_t type, rig_node_t *node, rut_boxed_t *value)
     case RUT_PROPERTY_TYPE_TEXT:
         value->type = RUT_PROPERTY_TYPE_TEXT;
         value->d.text_val = c_strdup(node->boxed.d.text_val);
-        return true;
-
-    case RUT_PROPERTY_TYPE_ASSET:
-        value->type = RUT_PROPERTY_TYPE_ASSET;
-        value->d.asset_val = rut_object_ref(node->boxed.d.asset_val);
         return true;
 
     case RUT_PROPERTY_TYPE_OBJECT:
@@ -419,17 +405,6 @@ rig_node_new_for_text(float t, const char *value)
     node->t = t;
     node->boxed.type = RUT_PROPERTY_TYPE_TEXT;
     node->boxed.d.text_val = c_strdup(value);
-
-    return node;
-}
-
-rig_node_t *
-rig_node_new_for_asset(float t, rig_asset_t *value)
-{
-    rig_node_t *node = c_slice_new(rig_node_t);
-    node->t = t;
-    node->boxed.type = RUT_PROPERTY_TYPE_ASSET;
-    node->boxed.d.asset_val = rut_object_ref(value);
 
     return node;
 }

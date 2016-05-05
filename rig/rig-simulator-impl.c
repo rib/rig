@@ -1161,31 +1161,6 @@ rig_simulator_forward_frontend_ui(rig_simulator_t *simulator,
     rig__frontend__load(frontend_service, pb_ui, handle_load_response, NULL);
 }
 
-#if 0
-bool
-asset_filter_cb(rig_asset_t *asset, void *user_data)
-{
-    rig_simulator_t *simulator = user_data;
-
-    switch (rig_asset_get_type(asset)) {
-    case RIG_ASSET_TYPE_BUILTIN:
-    case RIG_ASSET_TYPE_TEXTURE:
-    case RIG_ASSET_TYPE_NORMAL_MAP:
-    case RIG_ASSET_TYPE_ALPHA_MASK:
-        if (simulator->frontend_features.image_loader)
-            return false;
-        else
-            return true;
-    case RIG_ASSET_TYPE_FONT:
-    case RIG_ASSET_TYPE_MESH:
-        return true;
-    }
-
-    c_warn_if_reached();
-    return false;
-}
-#endif
-
 void
 rig_simulator_reload_frontend_ui(rig_simulator_t *simulator,
                                  rig_ui_t *ui)
@@ -1200,9 +1175,6 @@ rig_simulator_reload_frontend_ui(rig_simulator_t *simulator,
     serializer = rig_pb_serializer_new(engine);
 
     rig_pb_serializer_set_use_pointer_ids_enabled(serializer, true);
-    if (simulator->frontend_features.image_loader)
-        rig_pb_serializer_set_skip_image_data(serializer, true);
-    //rig_pb_serializer_set_asset_filter(serializer, asset_filter_cb, simulator);
 
     pb_ui = rig_pb_serialize_ui(serializer, ui);
 
