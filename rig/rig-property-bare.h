@@ -29,8 +29,7 @@
 
 /* Note: This API is shared with Rig's runtime code generation */
 
-#ifndef __RUT_PROPERTY_BARE_H__
-#define __RUT_PROPERTY_BARE_H__
+#pragma once
 
 typedef enum _rig_property_type_t {
     RUT_PROPERTY_TYPE_FLOAT = 1,
@@ -46,6 +45,7 @@ typedef enum _rig_property_type_t {
     RUT_PROPERTY_TYPE_COLOR,
     RUT_PROPERTY_TYPE_OBJECT,
     RUT_PROPERTY_TYPE_POINTER,
+    RUT_PROPERTY_TYPE_CONTAINER,
 } rig_property_type_t;
 
 typedef struct _rut_boxed_t {
@@ -189,6 +189,14 @@ typedef struct _rig_property_spec_t {
         /* This is just used to check the pointer against NULL */
         void *any_type;
     } setter;
+
+    struct {
+        void (*add)(void *object, void *item);
+        void (*remove)(void *object, void *item);
+        void (*foreach)(void *object,
+                        void (*callback)(void *item, void *user_data),
+                        void *user_data);
+    } container;
 
     const char *nick;
     const char *blurb;
@@ -389,5 +397,3 @@ rig_property_get_text(rig_property_t *property)
         return *data;
     }
 }
-
-#endif /* __RUT_PROPERTY_BARE_H__ */

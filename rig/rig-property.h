@@ -27,8 +27,7 @@
  *
  */
 
-#ifndef _RUT_PROPERTY_H_
-#define _RUT_PROPERTY_H_
+#pragma once
 
 #include <sys/types.h>
 #include <stdbool.h>
@@ -485,5 +484,3 @@ double
 rig_property_get_double (rig_property_t *property);
 
 #endif
-
-#endif /* _RUT_PROPERTY_H_ */
