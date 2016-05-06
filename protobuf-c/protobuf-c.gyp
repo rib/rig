@@ -3,7 +3,7 @@
 
     'conditions': [
       [ 'OS!="win"', { #i.e. POSIX
-        'ddefines': [
+        'defines': [
           '_ALL_SOURCE=1',
           '_GNU_SOURCE=1',
           'STDC_HEADERS=1',
