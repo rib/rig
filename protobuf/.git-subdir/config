@@ -1,0 +1,10 @@
+[subdir]
+	version = 1
+	commit-uuid = 1b9b6e37-c6f4-487f-ad2a-8285dd1710a3
+[subdir "integration"]
+	url = git@github.com:rig-project/protobuf.git
+	branch = rig
+	ref = bba83652e1be610bdb7ee1566ad18346d98b843c
+[subdir "upstream"]
+	url = https://github.com/google/protobuf
+	branch = master
