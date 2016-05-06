@@ -740,7 +740,7 @@
          'icu/source/icu.gyp:icuuc',
          'icu/source/icu.gyp:icudata',
          'hb',
-          'protobuf-c/protobuf-c.gyp:protoc-c#host',
+         'protobuf-c/protobuf-c.gyp:protoc-c#host',
          'protobuf-c/protobuf-c.gyp:protobuf-c',
          'test-fixtures/test-fixtures.gyp:libtest-fixtures',
          'LibOVR/libovr.gyp:libovr',
