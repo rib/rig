@@ -1,0 +1,10 @@
+[subdir]
+	version = 1
+	commit-uuid = 5fa39a89-412e-4713-9848-65c8d6dac90e
+[subdir "integration"]
+	url = git@github.com:rig-project/FFmpeg.git
+	branch = rig
+	ref = c66f4d1ae64dffaf456d05cbdade02054446f499
+[subdir "upstream"]
+	url = https://github.com/FFmpeg/FFmpeg
+	branch = master
