@@ -269,7 +269,7 @@ rig_rotation_tool_new(rig_camera_view_t *view)
 
     tool->camera = view->view_camera;
     tool->camera_component =
-        rig_entity_get_component(tool->camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(tool->camera, RIG_COMPONENT_TYPE_CAMERA);
 
     c_list_init(&tool->rotation_event_cb_list);
 
@@ -326,7 +326,7 @@ get_modelview_matrix(rig_entity_t *camera,
                      c_matrix_t *modelview)
 {
     rut_object_t *camera_component =
-        rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(camera, RIG_COMPONENT_TYPE_CAMERA);
     *modelview = *rut_camera_get_view_transform(camera_component);
 
     c_matrix_multiply(modelview, modelview, rig_entity_get_transform(entity));

@@ -679,69 +679,36 @@ rig_pb_serialize_component(rig_pb_serializer_t *serializer,
 
     pb_component->has_type = true;
 
-    if (type == &rig_light_type) {
+    if (type == &rig_light_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__LIGHT;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_material_type) {
+    else if (type == &rig_material_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MATERIAL;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_source_type) {
+    else if (type == &rig_source_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SOURCE;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_mesh_type) {
-        rig_mesh_t *mesh = (rig_mesh_t *)component;
-
+    else if (type == &rig_mesh_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MESH;
-
-        pb_component->mesh = rig_pb_serialize_mesh(serializer, mesh->rut_mesh);
-
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_text_type) {
+    else if (type == &rig_text_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_camera_type) {
+    else if (type == &rig_camera_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__CAMERA;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_nine_slice_type) {
+    else if (type == &rig_nine_slice_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    } else if (type == &rig_button_input_type) {
+    else if (type == &rig_button_input_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    }
 #ifdef USE_UV
-    else if (type == &rig_native_module_type) {
+    else if (type == &rig_native_module_type)
         pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE;
-        serialize_instrospectable_properties(component,
-                                             &pb_component->n_properties,
-                                             (void **)&pb_component->properties,
-                                             serializer);
-    }
 #endif
+
+    if (type == &rig_mesh_type) {
+        rig_mesh_t *mesh = (rig_mesh_t *)component;
+        pb_component->mesh = rig_pb_serialize_mesh(serializer, mesh->rut_mesh);
+    }
+
+    serialize_instrospectable_properties(component,
+                                         &pb_component->n_properties,
+                                         (void **)&pb_component->properties,
+                                         serializer);
 
     return pb_component;
 }
@@ -1732,6 +1699,7 @@ rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
                              Rig__Entity__Component *pb_component)
 {
     uint64_t component_id;
+    rut_object_t *component;
 
     if (!pb_component->has_id)
         return NULL;
@@ -1742,174 +1710,81 @@ rig_pb_unserialize_component(rig_pb_unserializer_t *unserializer,
         return NULL;
 
     switch (pb_component->type) {
-    case RIG__ENTITY__COMPONENT__TYPE__LIGHT: {
-        rig_light_t *light;
-
-        light = rig_light_new(unserializer->engine);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            light,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, light, component_id)) {
-            rut_object_unref(light);
-            light = NULL;
-        }
-        return light;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__MATERIAL: {
-        rig_material_t *material =
-            rig_material_new(unserializer->engine);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            material,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, material, component_id)) {
-            rut_object_unref(material);
-            material = NULL;
-        }
-        return material;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__SOURCE: {
-        rig_source_t *source =
-            rig_source_new(unserializer->engine,
-                           NULL, /* mime */
-                           NULL, /* url */
-                           NULL, /* data */
-                           0, /* data len */
-                           0, /* natural width */
-                           0); /* natural height */
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            source,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, source, component_id)) {
-            rut_object_unref(source);
-            source = NULL;
-        }
-        return source;
-    }
+    case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
+        component = rig_light_new(unserializer->engine);
+        break;
+    case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
+        component = rig_material_new(unserializer->engine);
+        break;
+    case RIG__ENTITY__COMPONENT__TYPE__SOURCE:
+        component = rig_source_new(unserializer->engine,
+                                   NULL, /* mime */
+                                   NULL, /* url */
+                                   NULL, /* data */
+                                   0, /* data len */
+                                   0, /* natural width */
+                                   0); /* natural height */
+        break;
     case RIG__ENTITY__COMPONENT__TYPE__MESH: {
         rut_mesh_t *rut_mesh;
-        rig_mesh_t *mesh;
 
         rut_mesh = rig_pb_unserialize_rut_mesh(unserializer, pb_component->mesh);
         if (!rut_mesh)
             return NULL;
 
-        mesh = rig_mesh_new_with_rut_mesh(unserializer->engine, rut_mesh);
-        set_properties_from_pb_boxed_values(unserializer,
-                                            mesh,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, mesh, component_id)) {
-            rut_object_unref(mesh);
-            mesh = NULL;
-        }
-        return mesh;
+        component = rig_mesh_new_with_rut_mesh(unserializer->engine, rut_mesh);
+        break;
     }
-    case RIG__ENTITY__COMPONENT__TYPE__TEXT: {
-        rig_text_t *text = rig_text_new(unserializer->engine);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            text,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, text, component_id)) {
-            rut_object_unref(text);
-            text = NULL;
-        }
-        return text;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__CAMERA: {
-        rig_camera_t *camera = rig_camera_new(unserializer->engine,
-                                              -1, /* ortho/vp width */
-                                              -1, /* ortho/vp height */
-                                              NULL);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            camera,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, camera, component_id)) {
-            rut_object_unref(camera);
-            camera = NULL;
-        }
-        return camera;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT: {
-        rig_button_input_t *button_input =
-            rig_button_input_new(unserializer->engine);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            button_input,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(
-            unserializer, button_input, component_id)) {
-            rut_object_unref(button_input);
-            button_input = NULL;
-        }
-        return button_input;
-    }
-    case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE: {
+    case RIG__ENTITY__COMPONENT__TYPE__TEXT:
+        component = rig_text_new(unserializer->engine);
+        break;
+    case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
+        component = rig_camera_new(unserializer->engine,
+                                   -1, /* ortho/vp width */
+                                   -1, /* ortho/vp height */
+                                   NULL);
+        break;
+    case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
+        component = rig_button_input_new(unserializer->engine);
+        break;
+    case RIG__ENTITY__COMPONENT__TYPE__NATIVE_MODULE:
 #ifdef USE_UV
-        rig_native_module_t *module =
-            rig_native_module_new(unserializer->engine);
-
-        set_properties_from_pb_boxed_values(unserializer,
-                                            module,
-                                            pb_component->n_properties,
-                                            pb_component->properties);
-
-        if (!rig_pb_unserializer_register_object(unserializer, module, component_id)) {
-            rut_object_unref(module);
-            module = NULL;
-        }
-        return module;
+        component = rig_native_module_new(unserializer->engine);
+        break;
 #else
         rig_pb_unserializer_collect_error(unserializer,
                                           "Can't unserialize unsupported native module");
         c_warn_if_reached();
         return NULL;
 #endif
+    case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
+        component = rig_nine_slice_new(unserializer->engine,
+                                       0,
+                                       0,
+                                       0,
+                                       0, /* left, right, top, bottom */
+                                       0,
+                                       0); /* width, height */
+        break;
     }
-    case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE: {
-        rig_nine_slice_t *nine_slice =
-            rig_nine_slice_new(unserializer->engine,
-                               0,
-                               0,
-                               0,
-                               0, /* left, right, top, bottom */
-                               0,
-                               0); /* width, height */
+
+    if (component) {
         set_properties_from_pb_boxed_values(unserializer,
-                                            nine_slice,
+                                            component,
                                             pb_component->n_properties,
                                             pb_component->properties);
 
-        if (!rig_pb_unserializer_register_object(unserializer, nine_slice,
-                                                 component_id))
-        {
-            rut_object_unref(nine_slice);
-            nine_slice = NULL;
+        if (!rig_pb_unserializer_register_object(unserializer,
+                                                 component,
+                                                 component_id)) {
+            rut_object_unref(component);
+            component = NULL;
         }
-
-        return nine_slice;
+        return component;
+    } else {
+        rig_pb_unserializer_collect_error(unserializer, "Unknown component type");
+        c_warn_if_reached();
     }
-    }
-
-    rig_pb_unserializer_collect_error(unserializer, "Unknown component type");
-    c_warn_if_reached();
 
     return NULL;
 }

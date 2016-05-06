@@ -406,7 +406,7 @@ rig_nine_slice_new(rig_engine_t *engine,
     rig_nine_slice_t *nine_slice = rut_object_alloc0(
         rig_nine_slice_t, &rig_nine_slice_type, _rig_nine_slice_init_type);
 
-    nine_slice->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
+    nine_slice->component.type = RIG_COMPONENT_TYPE_GEOMETRY;
     nine_slice->component.parented = false;
     nine_slice->component.engine = engine;
 

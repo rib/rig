@@ -259,7 +259,7 @@ _rig_mesh_new(rig_engine_t *engine)
     rig_mesh_t *mesh =
         rut_object_alloc0(rig_mesh_t, &rig_mesh_type, _rig_mesh_init_type);
 
-    mesh->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
+    mesh->component.type = RIG_COMPONENT_TYPE_GEOMETRY;
     mesh->component.parented = false;
     mesh->component.engine = engine;
 

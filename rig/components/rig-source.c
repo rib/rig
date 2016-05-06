@@ -796,7 +796,7 @@ rig_source_new(rig_engine_t *engine,
                                              &rig_source_type,
                                              _rig_source_init_type);
 
-    source->component.type = RUT_COMPONENT_TYPE_SOURCE;
+    source->component.type = RIG_COMPONENT_TYPE_SOURCE;
     source->component.parented = false;
     source->component.engine = engine;
 

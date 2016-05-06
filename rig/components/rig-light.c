@@ -167,7 +167,7 @@ rig_light_new(rig_engine_t *engine)
     rig_light_t *light =
         rut_object_alloc0(rig_light_t, &rig_light_type, _rig_light_init_type);
 
-    light->component.type = RUT_COMPONENT_TYPE_LIGHT;
+    light->component.type = RIG_COMPONENT_TYPE_LIGHT;
     light->component.parented = false;
     light->component.engine = engine;
 

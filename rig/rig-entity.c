@@ -608,7 +608,7 @@ rig_entity_rotate_z_axis(rig_entity_t *entity, float z_angle)
 
 rut_object_t *
 rig_entity_get_component(rig_entity_t *entity,
-                         rut_component_type_t type)
+                         rig_component_type_t type)
 {
     int i;
 
@@ -722,7 +722,7 @@ void
 rig_entity_set_camera_view_from_transform(rig_entity_t *camera)
 {
     rut_object_t *camera_component =
-        rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(camera, RIG_COMPONENT_TYPE_CAMERA);
     c_matrix_t transform;
     c_matrix_t view;
 

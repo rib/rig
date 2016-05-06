@@ -280,7 +280,7 @@ rig_native_module_new(rig_engine_t *engine)
                           &rig_native_module_type,
                           _rig_native_module_init_type);
 
-    module->component.type = RUT_COMPONENT_TYPE_CODE;
+    module->component.type = RIG_COMPONENT_TYPE_CODE;
     module->component.parented = false;
     module->component.engine = engine;
 

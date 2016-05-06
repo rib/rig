@@ -70,9 +70,9 @@ static void
 init_camera_from_camera(rig_entity_t *dst_camera, rig_entity_t *src_camera)
 {
     rut_object_t *dst_camera_comp =
-        rig_entity_get_component(dst_camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(dst_camera, RIG_COMPONENT_TYPE_CAMERA);
     rut_object_t *src_camera_comp =
-        rig_entity_get_component(src_camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(src_camera, RIG_COMPONENT_TYPE_CAMERA);
 
     rut_projection_t mode = rut_camera_get_projection_mode(src_camera_comp);
 
@@ -1010,7 +1010,7 @@ set_camera(rig_camera_view_t *view, rig_entity_t *camera)
     if (camera) {
         view->camera = rut_object_ref(camera);
         view->camera_component =
-            rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
+            rig_entity_get_component(camera, RIG_COMPONENT_TYPE_CAMERA);
         rut_object_ref(view->camera_component);
     }
 }
