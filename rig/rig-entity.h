@@ -43,16 +43,15 @@ typedef struct _rig_entity_t rig_entity_t;
 extern rut_type_t rig_entity_type;
 
 typedef enum {
-    RUT_COMPONENT_TYPE_CAMERA,
-    RUT_COMPONENT_TYPE_LIGHT,
-    RUT_COMPONENT_TYPE_GEOMETRY,
-    RUT_COMPONENT_TYPE_MATERIAL,
-    RUT_COMPONENT_TYPE_HAIR,
-    RUT_COMPONENT_TYPE_INPUT,
-    RUT_COMPONENT_TYPE_CODE,
-    RUT_COMPONENT_TYPE_SOURCE,
-    RUT_N_COMPNONENTS
-} rut_component_type_t;
+    RIG_COMPONENT_TYPE_CAMERA,
+    RIG_COMPONENT_TYPE_LIGHT,
+    RIG_COMPONENT_TYPE_GEOMETRY,
+    RIG_COMPONENT_TYPE_MATERIAL,
+    RIG_COMPONENT_TYPE_HAIR,
+    RIG_COMPONENT_TYPE_INPUT,
+    RIG_COMPONENT_TYPE_CODE,
+    RIG_COMPONENT_TYPE_SOURCE,
+} rig_component_type_t;
 
 typedef struct _rut_componentable_props_t {
     union {
@@ -62,7 +61,7 @@ typedef struct _rut_componentable_props_t {
         rig_entity_t *entity; /* back pointer to the entity the
                                  component belongs to */
     };
-    rut_component_type_t type : 8;
+    rig_component_type_t type : 8;
     unsigned parented : 1;
 } rut_componentable_props_t;
 
@@ -188,7 +187,7 @@ void rig_entity_rotate_y_axis(rig_entity_t *entity, float y_angle);
 void rig_entity_rotate_z_axis(rig_entity_t *entity, float z_angle);
 
 rut_object_t *rig_entity_get_component(rig_entity_t *entity,
-                                       rut_component_type_t type);
+                                       rig_component_type_t type);
 
 void rig_entity_foreach_component(rig_entity_t *entity,
                                   bool (*callback)(rut_object_t *component,

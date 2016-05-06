@@ -452,7 +452,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
     case RIG_ASSET_TYPE_NORMAL_MAP:
     case RIG_ASSET_TYPE_ALPHA_MASK: {
         material =
-            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
 
         if (!material) {
             material = rig_material_new(engine, asset);
@@ -468,7 +468,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
         else if (type == RIG_ASSET_TYPE_ALPHA_MASK)
             rig_material_set_alpha_mask_asset(material, asset);
 
-        geom = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+        geom = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
         if (!geom) {
             int width, height;
             rig_shape_t *shape;
@@ -486,7 +486,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
         float x_range, y_range, z_range, max_range;
 
         material =
-            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
 
         if (!material) {
             material = rig_material_new(engine, asset);
@@ -495,7 +495,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rut_object_unref(material);
         }
 
-        geom = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+        geom = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
         if (geom && rut_object_get_type(geom) == &rig_model_type) {
             model = geom;
@@ -529,13 +529,13 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             cg_color_t color;
             rig_hair_t *hair;
 
-            hair = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
+            hair = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_HAIR);
 
             if (hair)
                 rig_undo_journal_delete_component(engine->undo_journal, hair);
 
             geom =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
             if (geom && rut_object_get_type(geom) == &rut_text_type)
                 break;
@@ -553,7 +553,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             int tex_width = 200, tex_height = 200;
 
             geom =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
             if (geom && rut_object_get_type(geom) == &rig_shape_type)
                 break;
@@ -561,7 +561,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
                 rig_undo_journal_delete_component(engine->undo_journal, geom);
 
             material =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
 
             if (material) {
                 rig_asset_t *texture_asset =
@@ -578,7 +578,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_diamond_t *diamond;
 
             geom =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
             if (geom && rut_object_get_type(geom) == &rig_diamond_type)
                 break;
@@ -594,7 +594,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             int tex_width = 200, tex_height = 200;
 
             geom =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
             if (geom && rut_object_get_type(geom) == &rig_nine_slice_type)
                 break;
@@ -602,7 +602,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
                 rig_undo_journal_delete_component(engine->undo_journal, geom);
 
             material =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
 
             if (material) {
                 rig_asset_t *color_source_asset =
@@ -622,7 +622,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_pointalism_grid_t *grid;
 
             geom =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
             if (geom &&
                 rut_object_get_type(geom) == &rig_pointalism_grid_type) {
@@ -636,7 +636,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rut_object_unref(grid);
         } else if (asset == editor->hair_builtin_asset) {
             rig_hair_t *hair =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_HAIR);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_HAIR);
             if (hair)
                 break;
 
@@ -644,7 +644,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rig_undo_journal_add_component(engine->undo_journal, entity, hair);
             rut_object_unref(hair);
             geom =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
             if (geom && rut_object_get_type(geom) == &rig_model_type) {
                 rig_model_t *hair_geom = rig_model_new_for_hair(geom);
@@ -659,7 +659,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             }
         } else if (asset == editor->button_input_builtin_asset) {
             rig_button_input_t *button_input =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_INPUT);
             if (button_input)
                 break;
 
@@ -669,7 +669,7 @@ apply_asset_input_with_entity(rig_editor_t *editor,
             rut_object_unref(button_input);
         } else if (asset == editor->native_module_builtin_asset) {
             rig_native_module_t *module =
-                rig_entity_get_component(entity, RUT_COMPONENT_TYPE_CODE);
+                rig_entity_get_component(entity, RIG_COMPONENT_TYPE_CODE);
             if (module)
                 break;
 
@@ -1345,7 +1345,7 @@ static void
 add_light_handle(rig_engine_t *engine, rig_ui_t *ui)
 {
     // rig_camera_t *camera =
-    //  rig_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
+    //  rig_entity_get_component (ui->light, RIG_COMPONENT_TYPE_CAMERA);
     rut_ply_attribute_status_t padding_status[C_N_ELEMENTS(ply_attributes)];
     char *full_path = rut_find_data_file("light.ply");
     c_error_t *error = NULL;

@@ -238,7 +238,7 @@ rig_material_new(rig_engine_t *engine)
     rig_material_t *material = rut_object_alloc0(
         rig_material_t, &rig_material_type, _rig_material_init_type);
 
-    material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
+    material->component.type = RIG_COMPONENT_TYPE_MATERIAL;
     material->component.parented = false;
     material->component.engine = engine;
 
@@ -520,7 +520,7 @@ rig_material_flush_uniforms(rig_material_t *material,
     cg_pipeline_set_uniform_1f(
         pipeline, location, material->alpha_mask_threshold);
 
-    geo = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+    geo = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
     material->uniforms_flush_age = material->uniforms_age;
 }

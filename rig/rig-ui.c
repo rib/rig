@@ -550,7 +550,7 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
         c_matrix_t transform;
         rut_object_t *input;
 
-        input = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+        input = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_INPUT);
         if (!input)
             return RUT_TRAVERSE_VISIT_CONTINUE;
 
@@ -570,7 +570,7 @@ entitygraph_pre_pick_cb(rut_object_t *object, int depth, void *user_data)
         }
 #endif
 
-        geometry = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+        geometry = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
         if (!(geometry && rut_object_is(geometry, RUT_TRAIT_ID_MESHABLE) &&
               (mesh = rut_meshable_get_mesh(geometry))))
@@ -787,7 +787,7 @@ pick_for_event(rig_ui_t *ui, rut_input_event_t *event)
 
     c_return_val_if_fail(camera, NULL);
 
-    camera_component = rig_entity_get_component(camera, RUT_COMPONENT_TYPE_CAMERA);
+    camera_component = rig_entity_get_component(camera, RIG_COMPONENT_TYPE_CAMERA);
 
     switch (type) {
     case RUT_INPUT_EVENT_TYPE_KEY:
@@ -834,7 +834,7 @@ rig_ui_handle_input_event(rig_ui_t *ui, rut_input_event_t *event)
     if (!entity)
         return status;
 
-    inputable = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_INPUT);
+    inputable = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_INPUT);
 
     /* entity should only be NULL if we didn't find an inputable */
     c_return_val_if_fail(inputable, RUT_INPUT_EVENT_STATUS_UNHANDLED);

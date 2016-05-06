@@ -342,7 +342,7 @@ _rig_button_input_handle_event(rut_object_t *inputable,
 
         state->button_input = button_input;
         state->camera = rig_entity_get_component(event->camera_entity,
-                                                 RUT_COMPONENT_TYPE_CAMERA);
+                                                 RIG_COMPONENT_TYPE_CAMERA);
 
         rig_ui_grab_input(engine->ui, state->camera,
                           _rig_button_input_grab_input_cb, state);
@@ -396,7 +396,7 @@ rig_button_input_new(rig_engine_t *engine)
                           &rig_button_input_type,
                           _rig_button_input_init_type);
 
-    button_input->component.type = RUT_COMPONENT_TYPE_INPUT;
+    button_input->component.type = RIG_COMPONENT_TYPE_INPUT;
     button_input->component.parented = false;
     button_input->component.engine = engine;
 

@@ -1230,7 +1230,7 @@ rig_camera_new(rig_engine_t *engine,
 
     rig_introspectable_init(camera, _rig_camera_prop_specs, camera->properties);
 
-    camera->component.type = RUT_COMPONENT_TYPE_CAMERA;
+    camera->component.type = RIG_COMPONENT_TYPE_CAMERA;
     camera->component.parented = false;
     camera->component.engine = engine;
 

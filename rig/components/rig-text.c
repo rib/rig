@@ -315,7 +315,7 @@ rig_text_new(rig_engine_t *engine)
     rig_text_t *text =
         rut_object_alloc0(rig_text_t, &rig_text_type, _rig_text_init_type);
 
-    text->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
+    text->component.type = RIG_COMPONENT_TYPE_GEOMETRY;
     text->component.parented = false;
     text->component.engine = engine;
 

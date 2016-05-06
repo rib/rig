@@ -231,8 +231,8 @@ source_ready_cb(rig_source_t *source, void *user_data)
     rig_material_t *material;
     float width, height;
 
-    geometry = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
-    material = rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+    geometry = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
+    material = rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
 
     dirty_entity_pipelines(entity);
 
@@ -1191,7 +1191,7 @@ get_entity_pipeline(rig_renderer_t *renderer,
 {
     rig_engine_t *engine = renderer->engine;
     rig_material_t *material =
-        rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+        rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
     rig_source_t *sources[MAX_SOURCES];
     get_pipeline_flags_t flags = 0;
     rig_source_t *source;
@@ -1378,7 +1378,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
             &c_array_index(journal, rig_journal_entry_t, i);
         rig_entity_t *entity = entry->entity;
         rut_object_t *geometry =
-            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_GEOMETRY);
+            rig_entity_get_component(entity, RIG_COMPONENT_TYPE_GEOMETRY);
         cg_pipeline_t *pipeline;
         cg_primitive_t *primitive;
         float normal_matrix[9];
@@ -1402,7 +1402,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
             get_entity_pipeline(renderer, entity, geometry, paint_ctx->pass);
 
         material =
-            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
 
         /*
          * Update Uniforms...
@@ -1420,7 +1420,7 @@ rig_renderer_flush_journal(rig_renderer_t *renderer,
                     paint_ctx->pass == RIG_PASS_COLOR_BLENDED)) {
             rig_ui_t *ui = engine->ui;
             rig_light_t *light =
-                rig_entity_get_component(ui->light, RUT_COMPONENT_TYPE_LIGHT);
+                rig_entity_get_component(ui->light, RIG_COMPONENT_TYPE_LIGHT);
             int location;
 
             /* FIXME: only update the lighting uniforms when the light has
@@ -1469,7 +1469,7 @@ draw_entity_camera_frustum(rig_engine_t *engine,
                            cg_framebuffer_t *fb)
 {
     rut_object_t *camera =
-        rig_entity_get_component(entity, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(entity, RIG_COMPONENT_TYPE_CAMERA);
     cg_primitive_t *primitive = rut_camera_create_frustum_primitive(camera);
     cg_pipeline_t *pipeline = cg_pipeline_new(engine->shell->cg_device);
     cg_depth_state_t depth_state;
@@ -1525,7 +1525,7 @@ entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
         rig_renderer_priv_t *priv;
 
         material =
-            rig_entity_get_component(entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component(entity, RIG_COMPONENT_TYPE_MATERIAL);
         if (!material || !rig_material_get_visible(material))
             return RUT_TRAVERSE_VISIT_CONTINUE;
 
@@ -1533,7 +1533,7 @@ entitygraph_pre_paint_cb(rut_object_t *object, int depth, void *user_data)
             !rig_material_get_cast_shadow(material))
             return RUT_TRAVERSE_VISIT_CONTINUE;
 
-        geometry = rig_entity_get_component(object, RUT_COMPONENT_TYPE_GEOMETRY);
+        geometry = rig_entity_get_component(object, RIG_COMPONENT_TYPE_GEOMETRY);
         if (!geometry)
             return RUT_TRAVERSE_VISIT_CONTINUE;
 
@@ -1589,7 +1589,7 @@ paint_camera_entity_pass(rig_paint_context_t *paint_ctx,
 {
     rut_object_t *saved_camera = paint_ctx->camera;
     rut_object_t *camera =
-        rig_entity_get_component(camera_entity, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(camera_entity, RIG_COMPONENT_TYPE_CAMERA);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
 
@@ -1614,7 +1614,7 @@ static void
 set_light_framebuffer(rig_renderer_t *renderer, rig_entity_t *light)
 {
     rut_object_t *light_camera =
-        rig_entity_get_component(light, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(light, RIG_COMPONENT_TYPE_CAMERA);
     cg_framebuffer_t *fb = renderer->shadow_fb;
     int width = cg_framebuffer_get_width(fb);
     int height = cg_framebuffer_get_height(fb);
@@ -1628,7 +1628,7 @@ rig_renderer_paint_camera(rig_paint_context_t *paint_ctx,
                           rig_entity_t *camera_entity)
 {
     rut_object_t *camera =
-        rig_entity_get_component(camera_entity, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component(camera_entity, RIG_COMPONENT_TYPE_CAMERA);
     cg_framebuffer_t *fb = rut_camera_get_framebuffer(camera);
     rig_renderer_t *renderer = paint_ctx->renderer;
     rig_engine_t *engine = paint_ctx->engine;
