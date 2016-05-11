@@ -33,6 +33,7 @@
 #include <rut.h>
 
 #include <rig-c.h>
+#include <rig-c-mesh.h>
 
 static RObject *cam;
 static RObject *test;
@@ -42,10 +43,79 @@ static RObject *text_comp;
 
 static RObject *rects[100];
 
+static RObject *vertex_buf;
+static RObject *quad;
+
+struct vert {
+    float x, y;
+    float s, t;
+};
+
+static void
+create_mesh(RModule *module)
+{
+    struct vert vertices[] = {
+        {.x = -.5, .y = .5 , .s = 0, .t = 0},
+        {.x = -.5, .y = -.5, .s = 0, .t = 1},
+        {.x = .5, .y = -.5, .s = 1, .t = 1},
+        {.x = .5, .y = .5, .s = 1, .t = 0},
+    };
+    float normal[3] = { 0, 0, 1 };
+    float tangent[3] = { 1, 0, 0 };
+
+    quad = r_mesh_new(module);
+
+    vertex_buf = r_buffer_new(module, sizeof(vertices));
+
+    RObject *attributes[] = {
+        r_attribute_new(module,
+                        vertex_buf,
+                        "cg_position_in",
+                        sizeof(struct vert),
+                        offsetof(struct vert, x),
+                        2,
+                        R_ATTRIBUTE_TYPE_FLOAT),
+        r_attribute_new(module,
+                        vertex_buf,
+                        "cg_tex_coord0_in",
+                        sizeof(struct vert),
+                        offsetof(struct vert, s),
+                        2,
+                        R_ATTRIBUTE_TYPE_FLOAT),
+#if 0
+        r_attribute_new(module,
+                        vertex_buf,
+                        "cg_normal_in",
+                        sizeof(struct vert),
+                        offsetof(struct vert, pos),
+                        3,
+                        R_ATTRIBUTE_TYPE_FLOAT),
+#endif
+        r_attribute_new_const(module,
+                              "cg_normal_in",
+                              3, /* n components */
+                              1, /* n columns */
+                              false, /* no transpose */
+                              normal),
+        r_attribute_new_const(module,
+                              "tangent_in",
+                              3, /* n components */
+                              1, /* n columns */
+                              false, /* no transpose */
+                              tangent),
+    };
+
+
+    r_set_enum_by_name(module, quad, "vertices_mode", R_VERTICES_MODE_TRIANGLE_FAN);
+    r_set_integer_by_name(module, quad, "n_vertices", 4);
+
+    r_buffer_set_data(module, vertex_buf, 0, vertices, sizeof(vertices));
+
+    r_mesh_set_attributes(module, quad, attributes, 3);
+}
 void
 hello_load(RModule *module)
 {
-    RObject *shape = r_shape_new(module, 8.5, 8.5);
     RObject *material = r_material_new(module);
     RColor light_ambient = { .2, .2, .2, 1 };
     RColor light_diffuse = { .6, .6, .6, 1 };
@@ -53,6 +123,7 @@ hello_load(RModule *module)
     RObject *view;
     RObject *controller;
     int x, y;
+    create_mesh(module);
 
     RObject *e = r_entity_new(module, NULL);
     r_set_text_by_name(module, e, "label", "light");
@@ -97,14 +168,14 @@ hello_load(RModule *module)
     r_set_boolean_by_name(module, controller, "active", true);
 
     r_set_color_by_name(module, material, "ambient",
-                        r_color_str(module, "#ff0000"));
+                        r_color_str(module, "#ffffff"));
     r_set_color_by_name(module, material, "diffuse",
-                        r_color_str(module, "#ff0000"));
+                        r_color_str(module, "#ffffff"));
     r_set_color_by_name(module, material, "specular",
-                        r_color_str(module, "#ff0000"));
+                        r_color_str(module, "#ffffff"));
 
     test = r_entity_new(module, NULL);
-    r_add_component(module, test, shape);
+    r_add_component(module, test, quad);
     r_add_component(module, test, material);
 
     RObject *button = r_button_input_new(module);
@@ -119,7 +190,7 @@ hello_load(RModule *module)
     for (y = 0; y < 10; y++)
         for (x = 0; x < 10; x++) {
             RObject *rect = r_entity_clone(module, test);
-            r_set_float_by_name(module, rect, "scale", 0.1);
+            r_set_float_by_name(module, rect, "scale", 0.85);
             r_set_vec3_by_name(module, rect, "position", (float [3]){-5 + x, -5 + y, 0});
 
             rects[10 * y + x] = rect;
@@ -141,8 +212,10 @@ hello_load(RModule *module)
 }
 
 void
-hello_update(RModule *module, double delta_seconds)
+hello_update(RModule *module, RUpdateState *update)
 {
+    double delta_seconds = update->progress;
+
     //static float n = 0;
 
     //n -= 0.5;
@@ -154,7 +227,7 @@ hello_update(RModule *module, double delta_seconds)
 
     r_request_animation_frame(module);
 
-    //c_debug("hello_update callback (delta = %f)", delta_seconds);
+    c_debug("hello_update callback (delta = %f)", delta_seconds);
 }
 
 void
@@ -166,7 +239,7 @@ hello_input(RModule *module, RInputEvent *event)
 int
 main(int argc, char **argv)
 {
-    r_engine_t *engine = r_engine_new();
+    r_engine_t *engine = r_engine_new(&(REngineConfig) { 0 });
 
     r_engine_add_self_as_native_component(engine,
                                           R_ABI_LATEST,
