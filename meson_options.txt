@@ -1,0 +1,44 @@
+option('support_libuv', type : 'feature', value : 'auto',
+       description: 'Whether to support libuv dependant features',
+       yield: true)
+option('support_glib', type : 'feature', value : 'disabled',
+       description: 'Whether to support the GLIB dependant features',
+       yield: true)
+
+option('support_alsa', type : 'feature', value : 'auto',
+       description: 'Whether to support the Alsa dependant features',
+       yield: true)
+option('support_ffmpeg', type : 'feature', value : 'auto',
+       description: 'Whether to support the FFMPEG dependant features',
+       yield: true)
+
+option('support_x11', type : 'feature', value : 'auto',
+       description: 'Whether to support the X11 dependant features',
+       yield: true)
+
+option('support_sdl', type : 'feature', value : 'disabled',
+       description: 'Whether to support the SDL window system API',
+       yield: true)
+option('support_glx', type : 'feature', value : 'auto',
+       description: 'Whether to support the GLX window system API',
+       yield: true)
+option('support_egl', type : 'feature', value : 'auto',
+       description: 'Whether to support the EGL window system API',
+       yield: true)
+option('support_egl_kms', type : 'feature', value : 'auto',
+       description: 'Whether to support the EGL + KMS window system API',
+       yield: true)
+option('support_egl_wayland', type : 'feature', value : 'auto',
+       description: 'Whether to support the EGL + Wayland window system API',
+       yield: true)
+option('support_egl_xlib', type : 'feature', value : 'auto',
+       description: 'Whether to support the EGL + XLib window system API',
+       yield: true)
+
+option('support_gles2', type : 'feature', value : 'auto',
+       description: 'Whether to support the GLES 2.0 API',
+       yield: true)
+
+option('support_ncurses', type : 'feature', value : 'auto',
+       description: 'Whether to support Ncurses based debug features',
+       yield: true)

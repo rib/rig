@@ -30,7 +30,7 @@
 
 #ifdef USE_UV
 #include <uv.h>
-#include <wslay_event.h>
+#include <wslay/wslay_event.h>
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -202,7 +202,7 @@ rig_pb_stream_new(rut_shell_t *shell)
                           _rig_pb_stream_init_type);
 
     stream->shell = shell;
-    stream->allocator = &protobuf_c_default_allocator;
+    stream->allocator = NULL; // use the system allocator
 
     stream->type = STREAM_TYPE_DISCONNECTED;
 

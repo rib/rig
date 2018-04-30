@@ -1,0 +1,4 @@
+[wrap-git]
+directory = icu
+url = https://github.com/rig-project/icu.git
+revision = 0128c69b3119465cd8a64a7969cca024af88cc5b

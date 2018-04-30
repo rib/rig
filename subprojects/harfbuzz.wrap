@@ -1,0 +1,4 @@
+[wrap-git]
+directory = harfbuzz
+url = https://github.com/rig-project/harfbuzz.git
+revision = c77763c1ad26bbd524a3d623bb687674e4f55b38

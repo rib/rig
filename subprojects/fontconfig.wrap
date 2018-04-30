@@ -1,0 +1,4 @@
+[wrap-git]
+directory = fontconfig
+url = https://github.com/rig-project/fontconfig.git
+revision = 920cf67743a4e610ff76690dceaff0e2a035669f

@@ -1,0 +1,4 @@
+[wrap-git]
+directory = xdgmime
+url = https://github.com/rib/xdgmime.git
+revision = c797cdaf329d890a83d12dec6fe2f57dce0039dc

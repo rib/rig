@@ -31,7 +31,7 @@
 
 #ifdef USE_UV
 #include <uv.h>
-#include <wslay_event.h>
+#include <wslay/wslay_event.h>
 #endif
 #ifdef __EMSCRIPTEN__
 #include "rig-emscripten-lib.h"

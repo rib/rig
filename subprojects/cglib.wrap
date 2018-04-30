@@ -1,0 +1,4 @@
+[wrap-git]
+directory = cglib
+url = https://github.com/rib/cglib.git
+revision = eefca290a5d5a0099b00c8f06a365fdd2dad08d1

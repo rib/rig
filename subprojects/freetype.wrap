@@ -1,0 +1,4 @@
+[wrap-git]
+directory = freetype
+url = https://github.com/rig-project/freetype.git
+revision = 610ccd4ee167d54d0b730f60837eee1e04b85631

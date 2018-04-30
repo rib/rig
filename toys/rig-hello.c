@@ -30,7 +30,6 @@
 #include <getopt.h>
 
 #include <clib.h>
-#include <rut.h>
 
 #include <rig-c.h>
 #include <rig-c-mesh.h>
