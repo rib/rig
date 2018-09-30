@@ -1,9 +1,0 @@
-[subdir "integration"]
-	ref = 67fe06be883e0ff23d0ce867dc36d505fc84989e
-	url = git@github.com:rig-project/fontconfig.git
-	branch = rig
-[subdir]
-	version = 1
-	commit-uuid = 4afc770e-b8cc-49f9-92d9-c9bad3425dba
-[subdir "upstream"]
-	url = git://anongit.freedesktop.org/fontconfig
